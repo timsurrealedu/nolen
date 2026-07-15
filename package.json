@@ -2,5 +2,8 @@
   "name": "nolen-security-detection",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test" }
+  "scripts": {
+    "test": "node --test",
+    "start:ingestion": "node apps/ingestion/src/server.js"
+  }
 }
