@@ -1,0 +1,11 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment: { POSTGRES_PASSWORD: nolen, POSTGRES_DB: nolen }
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U postgres"], interval: 5s, timeout: 3s, retries: 10 }
+  nats:
+    image: nats:2.10-alpine
+    command: ["-js"]
+  clickhouse:
+    image: clickhouse/clickhouse-server:24-alpine
+    healthcheck: { test: ["CMD-SHELL", "wget -qO- http://localhost:8123/ping"], interval: 5s, timeout: 3s, retries: 10 }
