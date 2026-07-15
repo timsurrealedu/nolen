@@ -7,4 +7,5 @@ match:
   service.name: ssh
 group_by: [source.ip, host.id]
 condition: { count: 5, within: 60s }
-mitre: { tactic: initial-access, technique: T1190 }
+# Unmapped in MVP: this is an SSH account-enumeration precursor signal, not
+# exploitation of a public-facing application.

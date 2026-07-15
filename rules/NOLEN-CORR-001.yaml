@@ -1,7 +1,7 @@
 id: NOLEN-CORR-001
 name: Probable SSH Account Compromise
 severity: critical
-requires: [NOLEN-SSH-001, NOLEN-SEQ-001, NOLEN-PROC-001]
+requires: [[NOLEN-SSH-001, NOLEN-SSH-003], NOLEN-SEQ-001, NOLEN-PROC-001]
 same: [host.id, user.name]
 within: 5m
 mitre: [T1110, T1078, T1059.004]

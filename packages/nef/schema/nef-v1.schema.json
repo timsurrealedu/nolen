@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nolen.dev/schema/nef-v1.schema.json",
+  "title": "Nolen Event Format v1",
+  "type": "object",
+  "required": ["nef_version", "id", "timestamp", "host", "event"],
+  "properties": {
+    "nef_version": { "const": "1.0" },
+    "id": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "host": { "type": "object", "required": ["id"], "properties": { "id": { "type": "string", "minLength": 1 }, "name": { "type": "string" } } },
+    "agent": { "type": "object", "properties": { "id": { "type": "string", "minLength": 1 } } },
+    "observer": { "type": "object" },
+    "event": { "type": "object", "required": ["category", "action"], "properties": { "category": { "enum": ["authentication", "process", "file"] }, "action": { "type": "string" }, "result": { "enum": ["success", "failure"] } } },
+    "user": { "type": "object", "properties": { "name": { "type": "string", "minLength": 1 } } },
+    "source": { "type": "object", "properties": { "ip": { "type": "string", "anyOf": [{ "format": "ipv4" }, { "format": "ipv6" }] } } },
+    "service": { "type": "object", "properties": { "name": { "type": "string" } } },
+    "process": { "type": "object", "properties": { "name": { "type": "string", "minLength": 1 }, "pid": { "type": "integer", "minimum": 0 }, "parent_pid": { "type": "integer", "minimum": 0 }, "privilege": { "enum": ["standard", "elevated", "unknown"] }, "command_line": { "type": "string" }, "args": { "type": "array", "items": { "type": "string" } }, "parent_command_line": { "type": "string" } } },
+    "file": { "type": "object", "properties": { "path": { "type": "string", "pattern": "^/" } } }
+  },
+  "allOf": [
+    { "if": { "properties": { "event": { "properties": { "category": { "const": "authentication" } } } } }, "then": { "required": ["source", "service"], "properties": { "event": { "required": ["result"], "properties": { "action": { "enum": ["login", "invalid_user"] } } }, "source": { "required": ["ip"] }, "service": { "required": ["name"], "properties": { "name": { "const": "ssh" } } } } } },
+    { "if": { "properties": { "event": { "properties": { "category": { "const": "process" } } } } }, "then": { "required": ["process", "user"], "properties": { "event": { "properties": { "action": { "const": "start" } } }, "process": { "required": ["name", "pid", "privilege"] }, "user": { "required": ["name"] } } } },
+    { "if": { "properties": { "event": { "properties": { "category": { "const": "file" } } } } }, "then": { "required": ["file"], "properties": { "event": { "properties": { "action": { "enum": ["access", "modify"] } } }, "file": { "required": ["path"] } } } }
+  ]
+}

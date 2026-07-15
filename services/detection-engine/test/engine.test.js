@@ -11,7 +11,15 @@ test('creates the required rules, sequence, and SSH compromise incident', () => 
   assert.equal(incident.confidence, 80);
   assert.equal(incident.entities.hostId, 'host-1');
   assert.equal(incident.entities.user, 'deploy');
+  assert.equal(incident.detectionIds.length, 3);
   assert.deepEqual(incident.mitre, ['T1110', 'T1078', 'T1059.004']);
+});
+
+test('uses a distinct source-and-host rule when failed SSH logins have no username', () => {
+  const events = Array.from({ length: 10 }, (_, index) => ({ id: `unknown-${index}`, timestamp: `2026-07-16T10:00:${String(index).padStart(2, '0')}Z`, host: { id: 'host-unknown' }, source: { ip: '198.51.100.77' }, service: { name: 'ssh' }, event: { category: 'authentication', action: 'login', result: 'failure' } }));
+  const detections = detect(events);
+  assert.equal(detections.filter(item => item.ruleId === 'NOLEN-SSH-003').length, 1);
+  assert.equal(detections.some(item => item.ruleId === 'NOLEN-SSH-001'), false);
 });
 
 test('deduplicates event IDs before count windows', () => {

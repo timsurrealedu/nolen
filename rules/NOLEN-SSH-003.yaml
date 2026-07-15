@@ -1,12 +1,12 @@
-id: NOLEN-SSH-001
-name: SSH Brute Force (Known User)
+id: NOLEN-SSH-003
+name: SSH Brute Force (Unknown User)
 severity: high
 match:
   event.category: authentication
   event.action: login
   event.result: failure
   service.name: ssh
-require: [user.name]
-group_by: [source.ip, user.name, host.id]
+absent: [user.name]
+group_by: [source.ip, host.id]
 condition: { count: 10, within: 60s }
 mitre: { tactic: credential-access, technique: T1110 }
