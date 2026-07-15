@@ -1,0 +1,9 @@
+id: NOLEN-SEQ-001
+name: SSH Success After Brute Force
+severity: critical
+sequence:
+  - detection: NOLEN-SSH-001
+  - event: { event.category: authentication, event.action: login, event.result: success, service.name: ssh }
+same: [source.ip, host.id]
+within: 5m
+mitre: { tactic: initial-access, technique: T1078 }

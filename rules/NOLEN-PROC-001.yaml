@@ -1,0 +1,9 @@
+id: NOLEN-PROC-001
+name: Privileged Shell Spawned
+severity: high
+match:
+  event.category: process
+  event.action: start
+  process.name: [bash, sh, zsh]
+  process.privilege: elevated
+mitre: { tactic: privilege-escalation, technique: T1059.004 }

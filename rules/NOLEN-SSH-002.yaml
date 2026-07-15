@@ -1,0 +1,10 @@
+id: NOLEN-SSH-002
+name: Repeated Invalid SSH User Attempts
+severity: medium
+match:
+  event.category: authentication
+  event.action: invalid_user
+  service.name: ssh
+group_by: [source.ip, host.id]
+condition: { count: 5, within: 60s }
+mitre: { tactic: initial-access, technique: T1190 }

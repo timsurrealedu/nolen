@@ -1,0 +1,8 @@
+id: NOLEN-FILE-001
+name: Sensitive Authentication File Access
+severity: high
+match:
+  event.category: file
+  event.action: access
+  file.path_prefix: [/etc/shadow, /etc/sudoers, /home/*/.ssh/authorized_keys]
+mitre: { tactic: credential-access, technique: T1003 }

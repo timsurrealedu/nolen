@@ -1,0 +1,6 @@
+{
+  "name": "nolen-security-detection",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test" }
+}
