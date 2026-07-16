@@ -86,6 +86,7 @@ See the [threat model](docs/threat-model/THREAT_MODEL.md) and [telemetry securit
 - [Product requirements](PRD.md)
 - [Detection design](docs/detection/DETECTION_DESIGN.md)
 - [Detection coverage](docs/detection/COVERAGE_MATRIX.md)
+- [Integration security review](docs/security/SECURITY_REVIEW.md)
 - [ML labeling guidance](docs/detection/ML_LABELING.md)
 - [Safe SSH-compromise simulation](simulations/ssh-compromise/README.md)
 
