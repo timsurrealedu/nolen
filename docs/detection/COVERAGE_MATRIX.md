@@ -15,10 +15,10 @@
 ## Integration security review checklist
 
 - [ ] Agent credential is stored with owner-only permissions and never logged. (`SEC-005`)
-- [ ] Ingestion authenticates agent identity, rejects revoked identities, limits batch/request size, and rate-limits per identity. (`SEC-001` blocks runtime verification.)
-- [ ] NEF validation occurs before stream publication; validation errors contain no secrets. (`SEC-001`, `SEC-003`)
+- [x] Ingestion authenticates agent identity, rejects revoked identities, limits batch/request size, and rate-limits per identity.
+- [x] NEF validation and defense-in-depth redaction occur before stream publication; validation errors contain no secrets.
 - [ ] Storage enforces event-ID idempotency and detection receives unique IDs. Detection passes; storage remains open (`SEC-006`).
-- [ ] API authorizes raw evidence retrieval and incident-status updates. (`SEC-004`)
+- [x] API authorizes raw evidence retrieval; incident-status updates are not yet implemented.
 - [ ] Console escapes all event-derived fields and protects state-changing requests. (`SEC-007`)
-- [ ] Command-line and sensitive-field redaction is applied before persistence and display. (`SEC-002`, `SEC-003`)
+- [x] Command-line redaction is applied before local buffering and stream publication. Display verification remains blocked by `SEC-007`.
 - [ ] NATS, ClickHouse, PostgreSQL, and API service credentials are separate and least-privileged. (`SEC-006`)

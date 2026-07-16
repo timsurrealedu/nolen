@@ -16,6 +16,8 @@ This document records the agreed Timothy-to-Eugene integration contract. It is t
 - File events require a path and action of `access` or `modify`.
 - Unknown values are omitted; they are never invented. `process.privilege=unknown` is the single explicit exception.
 - The agent redacts command-line secrets before local buffering or transport. Ingestion repeats redaction before persistence and records that it changed an event without logging the secret.
+- Ingestion passes redaction audit metadata to publishers as `{ redactedEventIds }`; the IDs contain no secret values.
+- Application event, incident, agent, and incident-stream endpoints default deny and require a bearer-token identity with role `analyst` or `admin`.
 
 ## Detection and file policy
 

@@ -7,8 +7,8 @@ export const evaluateSecurityScenarios = () => securityScenarios().map(scenario 
   const invalidEventIds = scenario.events.filter(event => !validateEvent(event).valid).map(event => event.id);
   const detections = detect(scenario.events);
   const incidents = correlate(detections);
-  const ruleIds = [...new Set(detections.map(item => item.ruleId))].sort();
-  const expectedRuleIds = [...scenario.expectedRuleIds].sort();
+  const ruleIds = [...new Set(detections.map(item => item.ruleId))].sort((left, right) => left.localeCompare(right));
+  const expectedRuleIds = [...scenario.expectedRuleIds].sort((left, right) => left.localeCompare(right));
   return {
     id: scenario.id,
     eventCount: scenario.events.length,
