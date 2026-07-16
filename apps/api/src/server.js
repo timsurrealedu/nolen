@@ -1,10 +1,14 @@
 import { createServer } from 'node:http';
 
 const json = (response, status, body) => { response.writeHead(status, { 'content-type': 'application/json' }); response.end(JSON.stringify(body)); };
-export function createApplicationServer({ events = [], incidents = [], agents = [] } = {}) {
+export function createApplicationServer({ events = [], incidents = [], agents = [], users = {} } = {}) {
   const subscribers = new Set();
   const server = createServer((request, response) => {
     const url = new URL(request.url, 'http://localhost');
+    const token = request.headers.authorization?.replace(/^Bearer\s+/, '');
+    const user = Object.values(users).find(item => item.token === token);
+    if (!user) return json(response, 401, { error: 'authentication_required' });
+    if (!['analyst', 'admin'].includes(user.role)) return json(response, 403, { error: 'forbidden' });
     if (request.method === 'GET' && url.pathname === '/v1/events') {
       const fields = ['category', 'hostId', 'user', 'sourceIp', 'result'];
       const filtered = events.filter(event => fields.every(field => !url.searchParams.get(field) || ({ category: event.event?.category, hostId: event.host?.id, user: event.user?.name, sourceIp: event.source?.ip, result: event.event?.result })[field] === url.searchParams.get(field)));

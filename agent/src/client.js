@@ -1,11 +1,12 @@
 import { EventBuffer } from './buffer.js';
+import { sanitizeEvent } from '../../packages/nef/src/validate.js';
 
 export class NolenAgent {
   constructor({ endpoint, token, bufferPath, batchSize = 100, fetchImpl = fetch }) {
     this.endpoint = endpoint.replace(/\/$/, ''); this.token = token; this.buffer = new EventBuffer(bufferPath);
     this.batchSize = batchSize; this.fetch = fetchImpl;
   }
-  async collect(events) { await this.buffer.enqueue(events); }
+  async collect(events) { await this.buffer.enqueue(events.map(event => sanitizeEvent(event).event)); }
   async flush() {
     const events = await this.buffer.pending();
     for (let index = 0; index < events.length; index += this.batchSize) {

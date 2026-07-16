@@ -6,3 +6,6 @@ Run the local detector only:
 
 ```bash
 node simulations/ssh-compromise/run.js
+```
+
+Run the complete offline scenario matrix with `node simulations/run.js`.

@@ -8,7 +8,7 @@ const has = (event, expected) => Object.entries(expected).every(([field, want]) 
 
 const knownUserBrute = { id: 'NOLEN-SSH-001', name: 'SSH Brute Force (Known User)', severity: 'high', mitre: ['T1110'], match: { 'event.category': 'authentication', 'event.action': 'login', 'event.result': 'failure', 'service.name': 'ssh' }, fields: ['source.ip', 'user.name', 'host.id'], count: 10, within: 60_000, predicate: event => Boolean(value(event, 'user.name')) };
 const unknownUserBrute = { id: 'NOLEN-SSH-003', name: 'SSH Brute Force (Unknown User)', severity: 'high', mitre: ['T1110'], match: { 'event.category': 'authentication', 'event.action': 'login', 'event.result': 'failure', 'service.name': 'ssh' }, fields: ['source.ip', 'host.id'], count: 10, within: 60_000, predicate: event => value(event, 'user.name') == null };
-const invalidUser = { id: 'NOLEN-SSH-002', name: 'Repeated Invalid SSH User Attempts', severity: 'medium', mitre: ['T1190'], match: { 'event.category': 'authentication', 'event.action': 'invalid_user', 'service.name': 'ssh' }, fields: ['source.ip', 'host.id'], count: 5, within: 60_000 };
+const invalidUser = { id: 'NOLEN-SSH-002', name: 'Repeated Invalid SSH User Attempts', severity: 'medium', mitre: [], match: { 'event.category': 'authentication', 'event.action': 'invalid_user', 'service.name': 'ssh' }, fields: ['source.ip', 'host.id'], count: 5, within: 60_000 };
 const privilegedShell = { id: 'NOLEN-PROC-001', name: 'Privileged Shell Spawned', severity: 'high', mitre: ['T1059.004'], match: { 'event.category': 'process', 'event.action': 'start', 'process.privilege': 'elevated' } };
 const sensitiveFile = { id: 'NOLEN-FILE-001', name: 'Sensitive Authentication File Access', severity: 'high', mitre: ['T1003'], match: { 'event.category': 'file', 'event.action': 'access' } };
 const shellNames = new Set(['bash', 'sh', 'zsh']);
@@ -27,8 +27,14 @@ function countDetections(events, rule) {
   }
   return [...groups.values()].flatMap(group => {
     const ordered = [...group].sort((a, b) => at(a) - at(b));
-    const window = ordered.filter(event => at(event) >= at(ordered.at(-1)) - rule.within);
-    return window.length >= rule.count ? [detection(rule, window, { sourceIp: value(window[0], 'source.ip'), user: value(window[0], 'user.name'), hostId: value(window[0], 'host.id') })] : [];
+    for (let start = 0, end = 0; end < ordered.length; end++) {
+      while (at(ordered[end]) - at(ordered[start]) > rule.within) start++;
+      if (end - start + 1 >= rule.count) {
+        const window = ordered.slice(start, end + 1);
+        return [detection(rule, window, { sourceIp: value(window[0], 'source.ip'), user: value(window[0], 'user.name'), hostId: value(window[0], 'host.id') })];
+      }
+    }
+    return [];
   });
 }
 
@@ -54,7 +60,7 @@ export function correlate(detections) {
   for (const sequence of detections.filter(item => item.ruleId === 'NOLEN-SEQ-001')) {
     const bruteDetection = detections.find(item => item.id === sequence.entities.bruteDetectionId && [knownUserBrute.id, unknownUserBrute.id].includes(item.ruleId));
     if (!bruteDetection) continue;
-    const shell = detections.find(item => item.ruleId === 'NOLEN-PROC-001' && item.entities.hostId === sequence.entities.hostId && item.entities.user === sequence.entities.user && Math.abs(at(item) - at(sequence)) <= 300_000);
+    const shell = detections.find(item => item.ruleId === 'NOLEN-PROC-001' && item.entities.hostId === sequence.entities.hostId && item.entities.user === sequence.entities.user && at(item) >= at(sequence) && at(item) - at(sequence) <= 300_000);
     if (!shell) continue;
     const confidence = 80; // base 50 + same host 10 + same user 10 + five-minute window 10
     result.push({ id: `NOLEN-CORR-001:${bruteDetection.id}:${sequence.id}:${shell.id}`, title: 'Probable SSH Account Compromise', severity: 'critical', confidence, status: 'open', createdAt: shell.timestamp, entities: sequence.entities, detectionIds: [bruteDetection.id, sequence.id, shell.id], evidenceEventIds: [...new Set([...bruteDetection.evidenceEventIds, ...sequence.evidenceEventIds, ...shell.evidenceEventIds])], mitre: ['T1110', 'T1078', 'T1059.004'] });
