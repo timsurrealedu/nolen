@@ -27,8 +27,14 @@ function countDetections(events, rule) {
   }
   return [...groups.values()].flatMap(group => {
     const ordered = [...group].sort((a, b) => at(a) - at(b));
-    const window = ordered.filter(event => at(event) >= at(ordered.at(-1)) - rule.within);
-    return window.length >= rule.count ? [detection(rule, window, { sourceIp: value(window[0], 'source.ip'), user: value(window[0], 'user.name'), hostId: value(window[0], 'host.id') })] : [];
+    for (let start = 0, end = 0; end < ordered.length; end++) {
+      while (at(ordered[end]) - at(ordered[start]) > rule.within) start++;
+      if (end - start + 1 >= rule.count) {
+        const window = ordered.slice(start, end + 1);
+        return [detection(rule, window, { sourceIp: value(window[0], 'source.ip'), user: value(window[0], 'user.name'), hostId: value(window[0], 'host.id') })];
+      }
+    }
+    return [];
   });
 }
 
@@ -54,7 +60,7 @@ export function correlate(detections) {
   for (const sequence of detections.filter(item => item.ruleId === 'NOLEN-SEQ-001')) {
     const bruteDetection = detections.find(item => item.id === sequence.entities.bruteDetectionId && [knownUserBrute.id, unknownUserBrute.id].includes(item.ruleId));
     if (!bruteDetection) continue;
-    const shell = detections.find(item => item.ruleId === 'NOLEN-PROC-001' && item.entities.hostId === sequence.entities.hostId && item.entities.user === sequence.entities.user && Math.abs(at(item) - at(sequence)) <= 300_000);
+    const shell = detections.find(item => item.ruleId === 'NOLEN-PROC-001' && item.entities.hostId === sequence.entities.hostId && item.entities.user === sequence.entities.user && at(item) >= at(sequence) && at(item) - at(sequence) <= 300_000);
     if (!shell) continue;
     const confidence = 80; // base 50 + same host 10 + same user 10 + five-minute window 10
     result.push({ id: `NOLEN-CORR-001:${bruteDetection.id}:${sequence.id}:${shell.id}`, title: 'Probable SSH Account Compromise', severity: 'critical', confidence, status: 'open', createdAt: shell.timestamp, entities: sequence.entities, detectionIds: [bruteDetection.id, sequence.id, shell.id], evidenceEventIds: [...new Set([...bruteDetection.evidenceEventIds, ...sequence.evidenceEventIds, ...shell.evidenceEventIds])], mitre: ['T1110', 'T1078', 'T1059.004'] });

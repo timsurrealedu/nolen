@@ -7,8 +7,8 @@
 | Detection content | `rules/` | four rules, one sequence rule, one correlation rule |
 | ATT&CK rationale/confidence | `docs/detection/DETECTION_DESIGN.md` | mappings and deterministic confidence=80 |
 | Correlation implementation | `services/detection-engine/src/engine.js` | evidence IDs, entities, ATT&CK fields |
-| Safe simulation | `simulations/ssh-compromise/` | offline fixture; no network or system mutation |
-| Automated checks | `services/detection-engine/test/engine.test.js` | happy path, deduplication, entity mismatch |
+| Safe simulation | `simulations/` | validated offline scenario matrix; no network or system mutation |
+| Automated checks | `services/detection-engine/test/engine.test.js`, `simulations/scenarios.test.js` | rules, windows, entity isolation, ordering, false positives, NEF validity, label coverage |
 
 ## Integration security review checklist
 
@@ -20,4 +20,3 @@
 - [ ] Console escapes all event-derived fields and protects state-changing requests.
 - [ ] Command-line and sensitive-field redaction is applied before persistence and display.
 - [ ] NATS, ClickHouse, PostgreSQL, and API service credentials are separate and least-privileged.
-

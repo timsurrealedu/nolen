@@ -34,8 +34,52 @@ test('deduplicates event IDs before count windows', () => {
   assert.equal(detect([...failures.slice(0, 9), ...failures.slice(0, 9)]).filter(item => item.ruleId === 'NOLEN-SSH-001').length, 0);
 });
 
+test('keeps a qualifying count window when later events fall outside it', () => {
+  const failures = sshCompromiseEvents().filter(event => event.event.result === 'failure');
+  const late = { ...failures.at(-1), id: 'fail-late', timestamp: '2026-07-15T14:35:00Z' };
+  assert.equal(detect([...failures, late]).filter(item => item.ruleId === 'NOLEN-SSH-001').length, 1);
+});
+
+test('does not combine entities or events outside the count window', () => {
+  const failures = sshCompromiseEvents().filter(event => event.event.result === 'failure');
+  const splitSources = failures.map((event, index) => ({ ...event, source: { ip: index < 5 ? '198.51.100.1' : '198.51.100.2' } }));
+  const slow = failures.map((event, index) => ({ ...event, timestamp: new Date(Date.parse(failures[0].timestamp) + index * 7_000).toISOString() }));
+  assert.equal(detect(splitSources).some(item => item.ruleId === 'NOLEN-SSH-001'), false);
+  assert.equal(detect(slow).some(item => item.ruleId === 'NOLEN-SSH-001'), false);
+});
+
+test('enforces sensitive-file action policy and ignores elevated non-shells', () => {
+  const common = { nef_version: '1.0', timestamp: '2026-07-15T14:32:00Z', host: { id: 'host-1' }, user: { name: 'deploy' } };
+  const events = [
+    { ...common, id: 'passwd', event: { category: 'file', action: 'access' }, file: { path: '/etc/passwd' } },
+    { ...common, id: 'cron-read', event: { category: 'file', action: 'access' }, file: { path: '/etc/cron.d/backup' } },
+    { ...common, id: 'cron-write', event: { category: 'file', action: 'modify' }, file: { path: '/etc/cron.d/backup' } },
+    { ...common, id: 'shadow', event: { category: 'file', action: 'access' }, file: { path: '/etc/shadow' } },
+    { ...common, id: 'sudo', event: { category: 'process', action: 'start' }, process: { name: 'sudo', privilege: 'elevated' } }
+  ];
+  const detections = detect(events);
+  assert.deepEqual(detections.filter(item => item.ruleId === 'NOLEN-FILE-001').map(item => item.evidenceEventIds[0]), ['cron-write', 'shadow']);
+  assert.equal(detections.some(item => item.ruleId === 'NOLEN-PROC-001'), false);
+});
+
 test('does not correlate a privileged shell for a different user', () => {
   const events = sshCompromiseEvents();
   events.at(-1).user = { name: 'root' };
   assert.equal(correlate(detect(events)).length, 0);
+});
+
+test('does not correlate privileged activity before the successful login', () => {
+  const events = sshCompromiseEvents();
+  events.at(-1).timestamp = '2026-07-15T14:32:24Z';
+  assert.equal(correlate(detect(events)).length, 0);
+});
+
+test('requires the sequence source and five-minute correlation window', () => {
+  const wrongSource = sshCompromiseEvents();
+  wrongSource.at(-2).source = { ip: '203.0.113.10' };
+  assert.equal(correlate(detect(wrongSource)).length, 0);
+
+  const lateShell = sshCompromiseEvents();
+  lateShell.at(-1).timestamp = '2026-07-15T14:37:26Z';
+  assert.equal(correlate(detect(lateShell)).length, 0);
 });

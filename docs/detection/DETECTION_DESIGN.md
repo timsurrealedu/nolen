@@ -22,3 +22,11 @@ Confidence is deterministic: base correlation match 50, same host 10, same user 
 ## False-positive review
 
 Thresholds are conservative MVP defaults. Exclude known load-test sources only through version-controlled allowlists with review; never silently suppress a rule. Every rule change requires fixture-based tests and a documented rationale.
+
+Verified boundaries:
+
+- Count rules keep hosts, sources, and known users in separate groups; duplicate event IDs do not increase counts.
+- A qualifying count window remains detectable when later events fall outside it; events spanning more than the configured window do not combine.
+- `/etc/passwd` and reads under `/etc/cron*` remain telemetry only. Selected credential-file access and `/etc/cron*` modification produce detections.
+- Elevated non-shell processes do not trigger the privileged-shell rule.
+- Correlation requires the successful login to match the brute-force source and host, followed by a privileged shell for the same host/user within five minutes.
