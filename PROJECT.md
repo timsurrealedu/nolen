@@ -2,6 +2,12 @@
 
 This document records the agreed Timothy-to-Eugene integration contract. It is the source of truth until replaced by a versioned ADR or NEF revision.
 
+## Commands
+
+- `npm test`: full repository test suite.
+- `node services/detection-engine/test/engine.test.js`: detailed detection checks.
+- `node simulations/run.js`: validate and evaluate every offline security scenario; exits non-zero on a mismatch.
+
 ## NEF and redaction
 
 - All events require `nef_version`, `id`, UTC ISO-8601 `timestamp`, `host.id`, `event.category`, and `event.action`.
@@ -14,10 +20,17 @@ This document records the agreed Timothy-to-Eugene integration contract. It is t
 ## Detection and file policy
 
 - SSH brute force has two rules: known-user grouping uses source IP, username, and host; unknown-user grouping uses source IP and host only. Missing usernames are never coerced to an empty string.
-- The compromise incident explicitly requires a brute-force detection, a success-after-brute-force detection, and a privileged-shell detection on the same host and successful-login user within five minutes.
+- Count rules evaluate any qualifying window in the batch; later events cannot erase an earlier match. Duplicate IDs and separate entities never combine toward a threshold.
+- The compromise incident explicitly requires a brute-force detection, a success-after-brute-force detection, and a later privileged-shell detection on the same host and successful-login user within five minutes.
 - Invalid-user SSH attempts are an unmapped account-enumeration precursor signal for MVP.
 - `/etc/passwd` is telemetry only. `/etc/shadow`, `/etc/sudoers`, and `authorized_keys` are sensitive access targets. `/etc/cron*` is detected only when modified.
 
 ## ML policy
 
 ML labels are external ground truth, never NEF fields. A five-minute entity window is malicious when it contains `brute_force`, `successful_compromise`, or `privileged_activity`; otherwise it is normal. Train/test partitions are separated by time and scenario, never random events.
+
+## Simulation policy
+
+- Simulations construct validated in-memory NEF fixtures only; no SSH, shell execution, file mutation, or network request.
+- `simulations/labels.csv` has exactly one external label per unique fixture event.
+- Authorized maintenance may trigger privileged-shell or sensitive-file detections without creating a compromise incident; individual rule matches are evidence, not proof of malicious activity.
