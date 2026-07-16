@@ -11,8 +11,15 @@ test('creates the required rules, sequence, and SSH compromise incident', () => 
   assert.equal(incident.confidence, 80);
   assert.equal(incident.entities.hostId, 'host-1');
   assert.equal(incident.entities.user, 'deploy');
-  assert.equal(incident.detectionIds.length, 3);
+  assert.deepEqual(incident.detectionIds.map(id => id.split(':')[0]), ['NOLEN-SSH-001', 'NOLEN-SEQ-001', 'NOLEN-PROC-001']);
   assert.deepEqual(incident.mitre, ['T1110', 'T1078', 'T1059.004']);
+});
+
+test('keeps invalid-user enumeration unmapped in the MVP', () => {
+  const events = Array.from({ length: 5 }, (_, index) => ({ id: `invalid-${index}`, timestamp: `2026-07-16T10:00:0${index}Z`, host: { id: 'host-1' }, source: { ip: '198.51.100.44' }, service: { name: 'ssh' }, event: { category: 'authentication', action: 'invalid_user', result: 'failure' } }));
+  const [detection] = detect(events);
+  assert.equal(detection.ruleId, 'NOLEN-SSH-002');
+  assert.deepEqual(detection.mitre, []);
 });
 
 test('uses a distinct source-and-host rule when failed SSH logins have no username', () => {
@@ -31,5 +38,4 @@ test('does not correlate a privileged shell for a different user', () => {
   const events = sshCompromiseEvents();
   events.at(-1).user = { name: 'root' };
   assert.equal(correlate(detect(events)).length, 0);
-
 });
