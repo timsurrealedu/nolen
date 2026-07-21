@@ -1,6 +1,6 @@
 # Nolen ML feature table v1
 
-This table is derived from validated, redacted NEF events in ClickHouse. It is not a replacement for the deterministic detection engine.
+This table is derived from validated, redacted NEF events in ClickHouse. It is not a replacement for the deterministic detection engine. The initial offline build reads the synthetic JSONL/CSV pair and produces the same table shape.
 
 ## Grain
 
@@ -11,6 +11,8 @@ window_start + host.id + source.ip + user.name (nullable)
 ```
 
 `user.name` remains null when it was not present in source telemetry. It is never converted to an empty string.
+
+Events without both `host.id` and `source.ip` are excluded from this first entity feature table because they cannot be assigned to either canonical entity. The synthetic generator preserves source IP for post-login process and file telemetry so that those events remain attributable.
 
 ## Initial fields
 
@@ -34,3 +36,12 @@ window_start + host.id + source.ip + user.name (nullable)
 - Keep model features, labels, scenario identifier, and split assignment in a reproducible generated dataset.
 - Use scenario-and-time-separated train/test sets.
 - Report a deterministic rules baseline before evaluating any ML model.
+
+## Generate locally
+
+```bash
+npm run generate:dataset
+npm run build:feature-table
+```
+
+This writes `simulations/ml/out/feature-table.csv`. The split is deterministic: the first 70% of observed UTC dates plus non-held-out scenarios are training data; rows from later dates or the held-out `invalid_user_enumeration` and `ssh_compromise` scenarios are test data. The scenario/time combination is therefore never present in both partitions.
