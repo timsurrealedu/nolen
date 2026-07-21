@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 
 const users = ['alice', 'bob', 'carol', 'deploy', 'ops'];
 const processNames = ['bash', 'vim', 'systemctl', 'journalctl', 'git'];
-const scenarios = ['normal_operations', 'ssh_brute_force', 'invalid_user_enumeration', 'authorized_maintenance', 'ssh_compromise'];
+const scenarios = ['normal_operations', 'benign_login_retries', 'ssh_brute_force', 'invalid_user_enumeration', 'authorized_maintenance', 'ssh_compromise'];
 
 const random = seed => {
   let state = seed >>> 0;
@@ -43,6 +43,13 @@ export function generateDataset({ seed = 20260721, hostCount = 24, normalSession
       add({ scenario: 'normal_operations', stage: 'normal_session', label: 'normal', isMalicious: false, body: { timestamp: iso(timestamp + 2_000), host: machine, user: { name: identity }, source: { ip: source }, event: { category: 'process', action: 'start' }, process: { name: pick(processNames, next), pid: 1_000 + sequence, privilege: 'standard' } } });
       if (session % 4 === 0) add({ scenario: 'normal_operations', stage: 'routine_file_access', label: 'normal', isMalicious: false, body: { timestamp: iso(timestamp + 4_000), host: machine, user: { name: identity }, source: { ip: source }, event: { category: 'file', action: 'access' }, file: { path: '/etc/passwd' } } });
     }
+  }
+
+  // A short failed-login burst can be a normal password typo, not an attack.
+  for (let run = 0; run < attackRuns * 2; run += 1) {
+    const timestamp = time(), machine = host((run + 3) % hostCount + 1), identity = pick(users, next), source = normalIp(run + 120, 0);
+    for (let attempt = 0; attempt < 4; attempt += 1) add({ scenario: 'benign_login_retries', stage: 'password_retry', label: 'normal', isMalicious: false, body: { timestamp: iso(timestamp + attempt * 5_000), host: machine, user: { name: identity }, source: { ip: source }, service: { name: 'ssh' }, event: { category: 'authentication', action: 'login', result: 'failure' } } });
+    add({ scenario: 'benign_login_retries', stage: 'eventual_success', label: 'normal', isMalicious: false, body: { timestamp: iso(timestamp + 25_000), host: machine, user: { name: identity }, source: { ip: source }, service: { name: 'ssh' }, event: { category: 'authentication', action: 'login', result: 'success' } } });
   }
 
   for (let run = 0; run < attackRuns; run += 1) {

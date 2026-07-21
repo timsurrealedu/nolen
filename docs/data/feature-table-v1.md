@@ -53,3 +53,5 @@ npm run evaluate:baseline
 ```
 
 This fits a small logistic-regression model from numeric feature columns using only rows with `split=train`. It writes an ignored model artifact and an evaluation report to `simulations/ml/out/`. The report separately evaluates the deterministic brute-force rule (`failed_login_count >= 10`) on exactly the same protected test rows. The deterministic engine remains the authoritative incident source; the ML result is an offline comparison and future enrichment signal only.
+
+See [ML baseline v1](ml-baseline-v1.md) for the evaluation contract and limitations.

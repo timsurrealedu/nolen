@@ -12,4 +12,4 @@ The generated files are intentionally ignored by Git:
 - `labels.csv`: external ground-truth labels keyed by event ID.
 - `metadata.json`: seed and generation parameters for reproducibility.
 
-The default generator covers normal operations, unsuccessful SSH brute force, invalid-user enumeration, authorized maintenance, and SSH compromise. It generates 24 hosts over thirty synthetic days using a fixed seed. This is synthetic evaluation data, not a claim about production attack prevalence.
+The default generator covers normal operations, benign password retries, unsuccessful SSH brute force, invalid-user enumeration, authorized maintenance, and SSH compromise. It generates 24 hosts over thirty synthetic days using a fixed seed. This is synthetic evaluation data, not a claim about production attack prevalence.

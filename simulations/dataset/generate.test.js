@@ -12,7 +12,7 @@ test('generates deterministic, valid, externally labelled NEF data', () => {
   assert.equal(new Set(first.events.map(event => event.id)).size, first.events.length);
   assert.deepEqual(first.events.flatMap(event => validateEvent(event).errors), []);
   assert.equal(first.events.some(event => 'label' in event || 'is_malicious' in event), false);
-  assert.deepEqual(new Set(first.metadata.scenarios), new Set(['normal_operations', 'ssh_brute_force', 'invalid_user_enumeration', 'authorized_maintenance', 'ssh_compromise']));
+  assert.deepEqual(new Set(first.metadata.scenarios), new Set(['normal_operations', 'benign_login_retries', 'ssh_brute_force', 'invalid_user_enumeration', 'authorized_maintenance', 'ssh_compromise']));
 });
 
 test('keeps authorized maintenance normal while compromise windows contain malicious labels', () => {

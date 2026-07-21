@@ -84,6 +84,7 @@ export function evaluateBaselines(rows) {
     model,
     report: {
       split: { training_windows: trainingRows.length, test_windows: testRows.length },
+      model_feature_weights: Object.fromEntries(FEATURE_COLUMNS.map((feature, index) => [feature, model.weights[index]])),
       deterministic_rules_baseline: evaluate(testRows, ruleBaselinePrediction),
       logistic_regression_baseline: evaluate(testRows, row => predictProbability(model, row) >= model.threshold)
     }

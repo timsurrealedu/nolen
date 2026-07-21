@@ -11,6 +11,7 @@ test('trains an ML baseline only on the training partition and evaluates both ba
   assert.equal(model.type, 'logistic_regression');
   assert.ok(report.split.training_windows > 0);
   assert.ok(report.split.test_windows > 0);
+  assert.deepEqual(Object.keys(report.model_feature_weights), model.feature_columns);
   assert.equal(report.logistic_regression_baseline.evaluated_windows, report.split.test_windows);
   assert.equal(report.deterministic_rules_baseline.evaluated_windows, report.split.test_windows);
   assert.ok(report.logistic_regression_baseline.accuracy >= 0 && report.logistic_regression_baseline.accuracy <= 1);
