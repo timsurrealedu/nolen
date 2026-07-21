@@ -1,5 +1,8 @@
 import { createServer } from 'node:http';
+import { pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
 import { sanitizeEvent, validateEvent } from '../../../packages/nef/src/validate.js';
+import { connectEventBus, createEventPublisher } from '../../../packages/event-bus/src/nats.js';
 
 const json = (response, status, body) => { response.writeHead(status, { 'content-type': 'application/json' }); response.end(JSON.stringify(body)); };
 const read = request => new Promise((resolve, reject) => { let body = ''; request.on('data', chunk => { body += chunk; if (body.length > 1_000_000) request.destroy(); }); request.on('end', () => resolve(body)); request.on('error', reject); });
@@ -27,4 +30,8 @@ export function createIngestionServer({ agents = {}, publish = async () => {}, m
   });
 }
 
-if (process.argv[1] === new URL(import.meta.url).pathname) createIngestionServer({ agents: { local: { id: 'agent-local', token: process.env.NOLEN_AGENT_TOKEN ?? 'local-dev-token' } }, publish: async events => console.log(`published ${events.length} events`) }).listen(process.env.PORT ?? 3001);
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  const bus = await connectEventBus();
+  const port = process.env.PORT ?? 3001;
+  createIngestionServer({ agents: { local: { id: 'agent-local', token: process.env.NOLEN_AGENT_TOKEN ?? 'local-dev-token' } }, publish: createEventPublisher(bus) }).listen(port, () => console.log(`Nolen ingestion listening on ${port}`));
+}

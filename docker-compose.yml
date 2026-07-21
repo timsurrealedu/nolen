@@ -3,9 +3,12 @@ services:
     image: postgres:16-alpine
     environment: { POSTGRES_PASSWORD: nolen, POSTGRES_DB: nolen }
     healthcheck: { test: ["CMD-SHELL", "pg_isready -U postgres"], interval: 5s, timeout: 3s, retries: 10 }
+    ports: ["5432:5432"]
   nats:
     image: nats:2.10-alpine
     command: ["-js"]
+    ports: ["4222:4222", "8222:8222"]
   clickhouse:
     image: clickhouse/clickhouse-server:24-alpine
     healthcheck: { test: ["CMD-SHELL", "wget -qO- http://localhost:8123/ping"], interval: 5s, timeout: 3s, retries: 10 }
+    ports: ["8123:8123", "9000:9000"]
