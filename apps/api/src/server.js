@@ -1,18 +1,34 @@
 import { createServer } from 'node:http';
 
 const json = (response, status, body) => { response.writeHead(status, { 'content-type': 'application/json' }); response.end(JSON.stringify(body)); };
-export function createApplicationServer({ events = [], incidents = [], agents = [], users = {} } = {}) {
+const eventFilters = url => Object.fromEntries(['category', 'action', 'hostId', 'user', 'sourceIp', 'result', 'start', 'end', 'limit'].flatMap(field => url.searchParams.has(field) ? [[field, url.searchParams.get(field)]] : []));
+const filterInMemoryEvents = (events, filters) => events.filter(event => {
+  const values = { category: event.event?.category, action: event.event?.action, hostId: event.host?.id, user: event.user?.name, sourceIp: event.source?.ip, result: event.event?.result };
+  const timestamp = Date.parse(event.timestamp);
+  return Object.entries(filters).every(([field, value]) => {
+    if (field === 'limit') return true;
+    if (field === 'start') return timestamp >= Date.parse(value);
+    if (field === 'end') return timestamp <= Date.parse(value);
+    return values[field] === value;
+  });
+});
+
+export function createApplicationServer({ events = [], eventRepository, incidents = [], agents = [], users = {} } = {}) {
   const subscribers = new Set();
-  const server = createServer((request, response) => {
+  const server = createServer(async (request, response) => {
     const url = new URL(request.url, 'http://localhost');
     const token = request.headers.authorization?.replace(/^Bearer\s+/, '');
     const user = Object.values(users).find(item => item.token === token);
     if (!user) return json(response, 401, { error: 'authentication_required' });
     if (!['analyst', 'admin'].includes(user.role)) return json(response, 403, { error: 'forbidden' });
     if (request.method === 'GET' && url.pathname === '/v1/events') {
-      const fields = ['category', 'hostId', 'user', 'sourceIp', 'result'];
-      const filtered = events.filter(event => fields.every(field => !url.searchParams.get(field) || ({ category: event.event?.category, hostId: event.host?.id, user: event.user?.name, sourceIp: event.source?.ip, result: event.event?.result })[field] === url.searchParams.get(field)));
-      return json(response, 200, { events: filtered });
+      try {
+        const filters = eventFilters(url);
+        const matchingEvents = eventRepository ? await eventRepository.search(filters) : filterInMemoryEvents(events, filters);
+        return json(response, 200, { events: matchingEvents });
+      } catch (error) {
+        return json(response, error instanceof RangeError ? 400 : 500, { error: error instanceof RangeError ? 'invalid_event_filter' : 'event_search_failed' });
+      }
     }
     if (request.method === 'GET' && url.pathname === '/v1/incidents') return json(response, 200, { incidents });
     if (request.method === 'GET' && url.pathname === '/v1/agents') return json(response, 200, { agents });

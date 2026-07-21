@@ -5,8 +5,10 @@
   "scripts": {
     "test": "node --test",
     "start:ingestion": "node apps/ingestion/src/start.js",
+    "start:api": "node apps/api/src/start.js",
     "migrate:storage": "node services/event-store/src/migrate.js",
-    "start:event-store": "node services/event-store/src/start.js"
+    "start:event-store": "node services/event-store/src/start.js",
+    "generate:dataset": "node simulations/dataset/generate.js"
   },
   "dependencies": {
     "@clickhouse/client": "^1.12.1",

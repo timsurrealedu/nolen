@@ -62,3 +62,17 @@ test('application API requires an authorized analyst', async () => {
   assert.deepEqual(await response.json(), { events: [event] });
   await new Promise(resolve => server.close(resolve));
 });
+
+test('application API delegates persistent event searches to the repository', async () => {
+  let receivedFilters;
+  const server = createApplicationServer({
+    eventRepository: { search: async filters => { receivedFilters = filters; return [event]; } },
+    users: { analyst: { token: 'analyst', role: 'analyst' } }
+  });
+  await new Promise(resolve => server.listen(0, resolve));
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/v1/events?category=authentication&hostId=host-1&limit=20`, { headers: { authorization: 'Bearer analyst' } });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { events: [event] });
+  assert.deepEqual(receivedFilters, { category: 'authentication', hostId: 'host-1', limit: '20' });
+  await new Promise(resolve => server.close(resolve));
+});
