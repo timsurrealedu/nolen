@@ -9,7 +9,8 @@
     "migrate:storage": "node services/event-store/src/migrate.js",
     "start:event-store": "node services/event-store/src/start.js",
     "generate:dataset": "node simulations/dataset/generate.js",
-    "build:feature-table": "node simulations/ml/build-feature-table.js"
+    "build:feature-table": "node simulations/ml/build-feature-table.js",
+    "evaluate:baseline": "node simulations/ml/evaluate-baseline.js"
   },
   "dependencies": {
     "@clickhouse/client": "^1.12.1",

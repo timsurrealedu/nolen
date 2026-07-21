@@ -45,3 +45,11 @@ npm run build:feature-table
 ```
 
 This writes `simulations/ml/out/feature-table.csv`. The split is deterministic: the first 70% of observed UTC dates plus non-held-out scenarios are training data; rows from later dates or the held-out `invalid_user_enumeration` and `ssh_compromise` scenarios are test data. The scenario/time combination is therefore never present in both partitions.
+
+## Baselines
+
+```bash
+npm run evaluate:baseline
+```
+
+This fits a small logistic-regression model from numeric feature columns using only rows with `split=train`. It writes an ignored model artifact and an evaluation report to `simulations/ml/out/`. The report separately evaluates the deterministic brute-force rule (`failed_login_count >= 10`) on exactly the same protected test rows. The deterministic engine remains the authoritative incident source; the ML result is an offline comparison and future enrichment signal only.
