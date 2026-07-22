@@ -11,6 +11,7 @@
 | Automated checks | `services/detection-engine/test/engine.test.js`, `simulations/scenarios.test.js` | rules, windows, entity isolation, ordering, false positives, NEF validity, label coverage |
 | Security review | `docs/security/SECURITY_REVIEW.md` | verified controls, findings, owners, and release gate |
 | Correlation decision | `docs/adr/0001-deterministic-security-correlation.md` | proposed deterministic evidence and confidence contract |
+| Portfolio contribution | `docs/timothy/README.md` | architecture, decisions, verification evidence, findings, and residual risks |
 
 ## Integration security review checklist
 

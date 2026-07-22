@@ -89,6 +89,7 @@ See the [threat model](docs/threat-model/THREAT_MODEL.md) and [telemetry securit
 - [Detection design](docs/detection/DETECTION_DESIGN.md)
 - [Detection coverage](docs/detection/COVERAGE_MATRIX.md)
 - [Integration security review](docs/security/SECURITY_REVIEW.md)
+- [Timothy's detection and security contribution](docs/timothy/README.md)
 - [ML labeling guidance](docs/detection/ML_LABELING.md)
 - [Local operations and demo](docs/operations/LOCAL_OPERATIONS.md)
 - [Analyst API contract](docs/api/ANALYST_API.md)
