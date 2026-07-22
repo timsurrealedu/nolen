@@ -58,3 +58,5 @@ The browser test must initialize `globalThis.__nolenXss = false`, exercise all v
 ## Closure evidence
 
 `SEC-007` closes only when the repository contains passing browser tests for every automated case, production header evidence, the manual-review record, and links to fixed findings. Skipped tests and development-server results do not count.
+
+Closure evidence is recorded in `docs/security/SEC007_RESULTS.md`.

@@ -68,6 +68,7 @@ The simulation creates offline, NEF-like fixture events only. It does not make n
 docs/                       Specifications, detection design, and threat model
 rules/                      Detection and correlation rules
 services/detection-engine/  Initial detection and correlation implementation
+apps/console/               Production SOC investigation console
 simulations/                Safe, reproducible attack scenarios
 PRD.md                      Full product requirements
 ```

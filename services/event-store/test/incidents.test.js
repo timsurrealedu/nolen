@@ -17,3 +17,10 @@ test('lists bounded newest incidents', async () => {
   await assert.rejects(repository.list({ limit: 0 }), RangeError);
   await assert.rejects(repository.list({ limit: 1001 }), RangeError);
 });
+
+test('updates incident status and returns the audited previous status', async () => {
+  let parameters;
+  const repository = createPostgresIncidentRepository({ query: async (query, values) => { parameters = values; assert.match(query, /incident_status_audit/); return { rows: [{ body: { ...incident, status: 'resolved' }, previous_status: 'open' }] }; } });
+  assert.deepEqual(await repository.updateStatus('incident-1', 'resolved', 'admin'), { ...incident, status: 'resolved', previousStatus: 'open' });
+  assert.deepEqual(parameters, ['incident-1', 'resolved', 'admin']);
+});
