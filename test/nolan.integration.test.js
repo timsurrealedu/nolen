@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { NolenAgent } from '../agent/src/client.js';
 import { createApplicationServer } from '../apps/api/src/server.js';
 import { createIngestionServer } from '../apps/ingestion/src/server.js';
+import { readAgentCredential, rotateAgentCredential, writeAgentCredential } from '../agent/src/credentials.js';
 
 const event = { nef_version: '1.0', id: 'evt-agent-1', timestamp: '2026-07-15T12:00:00.000Z', event: { category: 'authentication', action: 'login', result: 'failure' }, host: { id: 'host-1' }, service: { name: 'ssh' }, source: { ip: '203.0.113.10' } };
 const sensitiveValue = ['test', 'sensitive', 'value'].join('-');
@@ -39,6 +40,20 @@ test('ingestion rejects invalid NEF and revoked identities', async () => {
   assert.equal((await send('bad', [event])).status, 401);
   assert.equal((await send('good', [{ ...event, timestamp: 'invalid' }])).status, 422);
   assert.deepEqual(published, []);
+  await new Promise(resolve => server.close(resolve));
+});
+
+test('credential rotation rejects the superseded agent token', async () => {
+  const path = join(await mkdtemp(join(tmpdir(), 'nolen-rotation-integration-')), 'agent.json');
+  await writeAgentCredential(path, { agentId: 'agent-rotation', token: 'old-agent-token-value' });
+  await rotateAgentCredential(path, 'new-agent-token-value');
+  const credential = await readAgentCredential(path);
+  const server = createIngestionServer({ agents: { configured: { id: credential.agentId, token: credential.token } } });
+  await new Promise(resolve => server.listen(0, resolve));
+  const endpoint = `http://127.0.0.1:${server.address().port}/v1/ingest/events`;
+  const send = token => fetch(endpoint, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify({ events: [event] }) });
+  assert.equal((await send('old-agent-token-value')).status, 401);
+  assert.equal((await send('new-agent-token-value')).status, 202);
   await new Promise(resolve => server.close(resolve));
 });
 test('ingestion enforces batch and per-agent request limits', async () => {
