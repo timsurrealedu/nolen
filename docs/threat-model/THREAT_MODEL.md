@@ -11,7 +11,7 @@ One Ubuntu test endpoint sends authenticated NEF batches to a local Nolen deploy
 | Agent credential and enrollment identity | endpoint -> ingestion API | scoped credential, TLS in deployment, revocation, secret-file permissions |
 | NEF events and evidence | agent -> ingestion -> NATS -> stores | schema validation, stable IDs, authenticated producer, duplicate handling |
 | Detection and incident data | detection service -> PostgreSQL/API | service authorization, append-only evidence IDs, audit status changes |
-| SOC session and console | browser -> application API | authenticated users, role checks, secure cookies/tokens, output encoding |
+| SOC session and console | browser -> application API | authenticated users, role checks, secure cookies/tokens, output encoding; verified by `docs/security/CONSOLE_SECURITY_ACCEPTANCE.md` |
 
 ## Threats and MVP mitigations
 

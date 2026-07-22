@@ -1,69 +1,84 @@
-const value = (event, path) => path.split('.').reduce((item, key) => item?.[key], event);
-const at = event => Date.parse(typeof event === 'string' ? event : event.timestamp);
-const key = (event, fields) => fields.map(field => value(event, field) ?? '').join('|');
-const has = (event, expected) => Object.entries(expected).every(([field, want]) => {
-  const actual = value(event, field);
-  return Array.isArray(want) ? want.includes(actual) : actual === want;
-});
+import { duration, loadRules } from '../../../packages/rule-parser/src/load.js';
 
-const knownUserBrute = { id: 'NOLEN-SSH-001', name: 'SSH Brute Force (Known User)', severity: 'high', mitre: ['T1110'], match: { 'event.category': 'authentication', 'event.action': 'login', 'event.result': 'failure', 'service.name': 'ssh' }, fields: ['source.ip', 'user.name', 'host.id'], count: 10, within: 60_000, predicate: event => Boolean(value(event, 'user.name')) };
-const unknownUserBrute = { id: 'NOLEN-SSH-003', name: 'SSH Brute Force (Unknown User)', severity: 'high', mitre: ['T1110'], match: { 'event.category': 'authentication', 'event.action': 'login', 'event.result': 'failure', 'service.name': 'ssh' }, fields: ['source.ip', 'host.id'], count: 10, within: 60_000, predicate: event => value(event, 'user.name') == null };
-const invalidUser = { id: 'NOLEN-SSH-002', name: 'Repeated Invalid SSH User Attempts', severity: 'medium', mitre: [], match: { 'event.category': 'authentication', 'event.action': 'invalid_user', 'service.name': 'ssh' }, fields: ['source.ip', 'host.id'], count: 5, within: 60_000 };
-const privilegedShell = { id: 'NOLEN-PROC-001', name: 'Privileged Shell Spawned', severity: 'high', mitre: ['T1059.004'], match: { 'event.category': 'process', 'event.action': 'start', 'process.privilege': 'elevated' } };
-const sensitiveFile = { id: 'NOLEN-FILE-001', name: 'Sensitive Authentication File Access', severity: 'high', mitre: ['T1003'], match: { 'event.category': 'file', 'event.action': 'access' } };
-const shellNames = new Set(['bash', 'sh', 'zsh']);
-const sensitiveAccessPaths = [/^\/etc\/(shadow|sudoers)/, /^\/home\/[^/]+\/\.ssh\/authorized_keys$/];
-const sensitiveModifyPaths = [/^\/etc\/(shadow|sudoers|cron[^/]*)/, /^\/home\/[^/]+\/\.ssh\/authorized_keys$/];
+const defaultRules = loadRules();
+const value = (event, path) => path.split('.').reduce((item, field) => item?.[field], event);
+const at = item => Date.parse(typeof item === 'string' ? item : item.timestamp);
+const entityName = { 'source.ip': 'sourceIp', 'user.name': 'user', 'host.id': 'hostId' };
+const entities = (event, fields) => Object.fromEntries(fields.map(field => [entityName[field] ?? field, value(event, field)]));
+const techniques = rule => Array.isArray(rule.mitre) ? rule.mitre : rule.mitre?.technique ? [rule.mitre.technique] : [];
+const glob = pattern => new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replaceAll('*', '.*')}`);
+
+function matches(event, expected = {}) {
+  return Object.entries(expected).every(([field, wanted]) => {
+    const actual = value(event, field.endsWith('_prefix') ? field.slice(0, -7) : field);
+    if (field.endsWith('_prefix')) return wanted.some(pattern => glob(pattern).test(actual ?? ''));
+    return Array.isArray(wanted) ? wanted.includes(actual) : actual === wanted;
+  });
+}
+
+function applies(event, rule) {
+  return (rule.matches ?? [rule.match]).some(expected => matches(event, expected))
+    && (rule.require ?? []).every(field => value(event, field) != null)
+    && (rule.absent ?? []).every(field => value(event, field) == null);
+}
 
 function detection(rule, events, entity = {}) {
-  return { id: `${rule.id}:${events.map(event => event.id).join(',')}`, ruleId: rule.id, title: rule.name, severity: rule.severity, timestamp: events.at(-1).timestamp, evidenceEventIds: events.map(event => event.id), entities: entity, mitre: rule.mitre };
+  return { id: `${rule.id}:${events.map(event => event.id).join(',')}`, ruleId: rule.id, title: rule.name, severity: rule.severity, timestamp: events.at(-1).timestamp, evidenceEventIds: events.map(event => event.id), entities: entity, mitre: techniques(rule) };
 }
 
 function countDetections(events, rule) {
   const groups = new Map();
-  for (const event of events.filter(event => has(event, rule.match) && (rule.predicate?.(event) ?? true))) {
-    const group = key(event, rule.fields);
+  for (const event of events.filter(event => applies(event, rule))) {
+    const group = rule.group_by.map(field => value(event, field) ?? '').join('|');
     groups.set(group, [...(groups.get(group) ?? []), event]);
   }
   return [...groups.values()].flatMap(group => {
     const ordered = [...group].sort((a, b) => at(a) - at(b));
-    for (let start = 0, end = 0; end < ordered.length; end++) {
-      while (at(ordered[end]) - at(ordered[start]) > rule.within) start++;
-      if (end - start + 1 >= rule.count) {
+    const within = duration(rule.condition.within);
+    for (let start = 0, end = 0; end < ordered.length; end += 1) {
+      while (at(ordered[end]) - at(ordered[start]) > within) start += 1;
+      if (end - start + 1 >= rule.condition.count) {
         const window = ordered.slice(start, end + 1);
-        return [detection(rule, window, { sourceIp: value(window[0], 'source.ip'), user: value(window[0], 'user.name'), hostId: value(window[0], 'host.id') })];
+        return [detection(rule, window, entities(window[0], rule.group_by))];
       }
     }
     return [];
   });
 }
 
-export function detect(events) {
+export function detect(events, { rules = defaultRules } = {}) {
   const unique = [...new Map(events.map(event => [event.id, event])).values()].sort((a, b) => at(a) - at(b));
-  const detections = [...countDetections(unique, knownUserBrute), ...countDetections(unique, unknownUserBrute), ...countDetections(unique, invalidUser)];
-  for (const event of unique) {
-    if (has(event, privilegedShell.match) && shellNames.has(value(event, 'process.name'))) detections.push(detection(privilegedShell, [event], { hostId: value(event, 'host.id'), user: value(event, 'user.name') }));
-    const path = value(event, 'file.path') ?? '';
-    const isSensitiveAccess = value(event, 'event.action') === 'access' && sensitiveAccessPaths.some(pattern => pattern.test(path));
-    const isSensitiveModification = value(event, 'event.action') === 'modify' && sensitiveModifyPaths.some(pattern => pattern.test(path));
-    if (has(event, { 'event.category': 'file' }) && (isSensitiveAccess || isSensitiveModification)) detections.push(detection(sensitiveFile, [event], { hostId: value(event, 'host.id'), user: value(event, 'user.name') }));
-  }
-  for (const bruteDetection of detections.filter(item => [knownUserBrute.id, unknownUserBrute.id].includes(item.ruleId))) {
-    const success = unique.find(event => has(event, { 'event.category': 'authentication', 'event.action': 'login', 'event.result': 'success', 'service.name': 'ssh' }) && value(event, 'host.id') === bruteDetection.entities.hostId && value(event, 'source.ip') === bruteDetection.entities.sourceIp && at(event) >= at(bruteDetection.timestamp) && at(event) - at(bruteDetection.timestamp) <= 300_000);
-    if (success) detections.push({ ...detection({ id: 'NOLEN-SEQ-001', name: 'SSH Success After Brute Force', severity: 'critical', mitre: ['T1078'] }, [success], { ...bruteDetection.entities, user: value(success, 'user.name'), bruteDetectionId: bruteDetection.id }), evidenceEventIds: [...bruteDetection.evidenceEventIds, success.id] });
+  const atomic = [...rules.values()].filter(rule => rule.match || rule.matches);
+  const detections = atomic.flatMap(rule => rule.condition
+    ? countDetections(unique, rule)
+    : unique.filter(event => applies(event, rule)).map(event => detection(rule, [event], entities(event, ['host.id', 'user.name']))));
+
+  for (const rule of [...rules.values()].filter(item => item.sequence)) {
+    const detectionIds = rule.sequence[0].any_detection;
+    for (const precursor of detections.filter(item => detectionIds.includes(item.ruleId))) {
+      const success = unique.find(event => matches(event, rule.sequence[1].event)
+        && rule.same.every(field => value(event, field) === precursor.entities[entityName[field] ?? field])
+        && at(event) >= at(precursor)
+        && at(event) - at(precursor) <= duration(rule.within));
+      if (success) detections.push({ ...detection(rule, [success], { ...precursor.entities, ...entities(success, ['user.name']), precursorDetectionId: precursor.id }), evidenceEventIds: [...precursor.evidenceEventIds, success.id] });
+    }
   }
   return detections;
 }
 
-export function correlate(detections) {
-  const result = [];
-  for (const sequence of detections.filter(item => item.ruleId === 'NOLEN-SEQ-001')) {
-    const bruteDetection = detections.find(item => item.id === sequence.entities.bruteDetectionId && [knownUserBrute.id, unknownUserBrute.id].includes(item.ruleId));
-    if (!bruteDetection) continue;
-    const shell = detections.find(item => item.ruleId === 'NOLEN-PROC-001' && item.entities.hostId === sequence.entities.hostId && item.entities.user === sequence.entities.user && at(item) >= at(sequence) && at(item) - at(sequence) <= 300_000);
-    if (!shell) continue;
-    const confidence = 80; // base 50 + same host 10 + same user 10 + five-minute window 10
-    result.push({ id: `NOLEN-CORR-001:${bruteDetection.id}:${sequence.id}:${shell.id}`, title: 'Probable SSH Account Compromise', severity: 'critical', confidence, status: 'open', createdAt: shell.timestamp, entities: sequence.entities, detectionIds: [bruteDetection.id, sequence.id, shell.id], evidenceEventIds: [...new Set([...bruteDetection.evidenceEventIds, ...sequence.evidenceEventIds, ...shell.evidenceEventIds])], mitre: ['T1110', 'T1078', 'T1059.004'] });
+export function correlate(detections, { rules = defaultRules } = {}) {
+  const incidents = [];
+  for (const rule of [...rules.values()].filter(item => item.requires)) {
+    const [precursorIds, sequenceId, activityId] = rule.requires;
+    for (const sequence of detections.filter(item => item.ruleId === sequenceId)) {
+      const precursor = detections.find(item => item.id === sequence.entities.precursorDetectionId && precursorIds.includes(item.ruleId));
+      const activity = detections.find(item => item.ruleId === activityId
+        && rule.same.every(field => item.entities[entityName[field] ?? field] === sequence.entities[entityName[field] ?? field])
+        && at(item) >= at(sequence)
+        && at(item) - at(sequence) <= duration(rule.within));
+      if (!precursor || !activity) continue;
+      incidents.push({ id: `${rule.id}:${precursor.id}:${sequence.id}:${activity.id}`, title: rule.name, severity: rule.severity, confidence: rule.confidence, status: 'open', createdAt: activity.timestamp, entities: sequence.entities, detectionIds: [precursor.id, sequence.id, activity.id], evidenceEventIds: [...new Set([...precursor.evidenceEventIds, ...sequence.evidenceEventIds, ...activity.evidenceEventIds])], mitre: techniques(rule) });
+    }
   }
-  return result;
+  return incidents;
 }

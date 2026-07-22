@@ -26,6 +26,8 @@ All components communicate security events through **NEF (Nolen Event Format)**,
 
 ## MVP scope
 
+Team MVP scope follows `specifiedPRD.md` v2.0: four detection behaviors, represented by five atomic YAML rules because SSH brute force has known/unknown-user variants, plus one sequence rule and one SSH-compromise correlation. The larger rule and scenario set in `PRD.md` v1.0 is the post-MVP backlog.
+
 - Linux endpoint telemetry for authentication, processes, and selected sensitive files
 - Authenticated batched event ingestion with validation and retry-aware delivery
 - Declarative YAML detection rules, including count-window and sequence detection
@@ -87,6 +89,7 @@ See the [threat model](docs/threat-model/THREAT_MODEL.md) and [telemetry securit
 - [Detection design](docs/detection/DETECTION_DESIGN.md)
 - [Detection coverage](docs/detection/COVERAGE_MATRIX.md)
 - [Integration security review](docs/security/SECURITY_REVIEW.md)
+- [Timothy's detection and security contribution](docs/timothy/README.md)
 - [ML labeling guidance](docs/detection/ML_LABELING.md)
 - [Local operations and demo](docs/operations/LOCAL_OPERATIONS.md)
 - [Analyst API contract](docs/api/ANALYST_API.md)

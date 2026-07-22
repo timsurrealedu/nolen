@@ -7,6 +7,8 @@
 **Team:** Eugene (Data Engineering & ML), Timothy (Cybersecurity), Dillon (UI/UX), Nolan (Software Engineering)  
 **Target:** One Linux endpoint and a web-based SOC console
 
+**Authority:** This version 2.0 document defines Team MVP scope and acceptance. The broader version 1.0 `PRD.md` remains product direction and post-MVP backlog. See `docs/adr/0003-team-mvp-scope-authority.md`.
+
 ---
 
 ## 1. Product Summary

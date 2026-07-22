@@ -9,6 +9,8 @@
 **Target Platform:** Linux endpoints and web-based SOC console
 **Primary Domain:** Security Operations, Endpoint Telemetry, Detection Engineering, Distributed Systems
 
+> **Scope note:** This version 1.0 document describes the broader product target. `specifiedPRD.md` version 2.0 is authoritative for Team MVP scope and acceptance. Conflicting targets such as ten rules and three correlations are post-MVP work until the focused SSH-compromise demo is complete. See `docs/adr/0003-team-mvp-scope-authority.md`.
+
 ---
 
 # 1. Product Overview
