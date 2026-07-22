@@ -22,6 +22,7 @@
   "dependencies": {
     "@clickhouse/client": "^1.12.1",
     "nats": "^2.29.3",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "yaml": "^2.9.0"
   }
 }

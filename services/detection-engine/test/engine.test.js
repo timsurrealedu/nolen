@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { correlate, detect } from '../src/engine.js';
 import { sshCompromiseEvents } from '../../../simulations/ssh-compromise/fixture.js';
+import { loadRules } from '../../../packages/rule-parser/src/load.js';
 
 test('creates the required rules, sequence, and SSH compromise incident', () => {
   const detections = detect(sshCompromiseEvents());
@@ -13,6 +14,18 @@ test('creates the required rules, sequence, and SSH compromise incident', () => 
   assert.equal(incident.entities.user, 'deploy');
   assert.deepEqual(incident.detectionIds.map(id => id.split(':')[0]), ['NOLEN-SSH-001', 'NOLEN-SEQ-001', 'NOLEN-PROC-001']);
   assert.deepEqual(incident.mitre, ['T1110', 'T1078', 'T1059.004']);
+});
+
+test('uses repository YAML metadata and thresholds', () => {
+  const rules = loadRules();
+  const rule = rules.get('NOLEN-SSH-001');
+  const events = sshCompromiseEvents().filter(event => event.event.result === 'failure');
+  assert.equal(rule.condition.count, 10);
+  rule.condition.count = 11;
+  assert.equal(detect(events, { rules }).some(item => item.ruleId === rule.id), false);
+  rule.condition.count = 10;
+  rule.name = 'Rule name loaded from YAML';
+  assert.equal(detect(events, { rules }).find(item => item.ruleId === rule.id).title, rule.name);
 });
 
 test('keeps invalid-user enumeration unmapped in the MVP', () => {

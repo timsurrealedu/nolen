@@ -1,6 +1,6 @@
 # Detection and correlation design
 
-Rules in `rules/` are the reviewed detection-as-code source. The lightweight MVP engine mirrors their semantics until a shared rule parser is supplied.
+Repository YAML under `rules/` is the authoritative detection-as-code source. The shared parser validates required metadata, thresholds, durations, grouping, sequences, and correlations during module startup; invalid rules stop the detection service before telemetry is processed.
 
 ## Coverage and ATT&CK rationale
 
