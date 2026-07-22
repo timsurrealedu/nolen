@@ -8,6 +8,7 @@
     "start:api": "node apps/api/src/start.js",
     "migrate:storage": "node services/event-store/src/migrate.js",
     "start:event-store": "node services/event-store/src/start.js",
+    "start:detection": "node services/detection-engine/src/consumer.js",
     "generate:dataset": "node simulations/dataset/generate.js",
     "build:feature-table": "node simulations/ml/build-feature-table.js",
     "evaluate:baseline": "node simulations/ml/evaluate-baseline.js",

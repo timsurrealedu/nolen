@@ -15,5 +15,5 @@ ClickHouse stores the redacted, searchable event record. It uses `ReplacingMerge
 ## Consequences
 
 - The system is at-least-once from agent to JetStream and idempotent at storage.
-- Detection and real-time services must receive their own durable consumers; the storage consumer must not be the only subscriber.
+- Detection receives events through its own `detection-engine` durable consumer and publishes deduplicated incidents to the `NOLEN_INCIDENTS` stream. Real-time and persistent incident consumers remain separate integration work.
 - This uses a local single-node JetStream/PostgreSQL/ClickHouse deployment and is not a high-availability design.

@@ -12,6 +12,7 @@ Run these three long-lived services in separate terminals:
 ```bash
 npm run start:ingestion
 npm run start:event-store
+npm run start:detection
 npm run start:api
 ```
 
@@ -35,6 +36,8 @@ npm run demo:live
 ```
 
 It sends one harmless synthetic failed-SSH event to local ingestion, waits for NATS/event-store persistence, then verifies that the analyst API can retrieve the same event. It uses the local development tokens and does not connect to remote hosts.
+
+The detection consumer validates stream events again, keeps a bounded ten-minute in-memory correlation window, and publishes completed incidents once. Restart-persistent sequence state and an incident-store consumer are not yet implemented; restarting detection during an active sequence can therefore miss that correlation.
 
 ## Retention preview
 
