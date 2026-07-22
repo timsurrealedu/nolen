@@ -6,7 +6,8 @@ const names = [
   'postgres_incident_store_password', 'postgres_api_password', 'clickhouse_admin_password',
   'clickhouse_event_store_password', 'clickhouse_api_password', 'nats_admin_password',
   'nats_ingestion_password', 'nats_event_store_password', 'nats_detection_password',
-  'nats_incident_store_password', 'nats_api_password', 'agent_token', 'analyst_token'
+  'nats_incident_store_password', 'nats_api_password', 'agent_token', 'analyst_token',
+  'console_analyst_password', 'console_admin_password'
 ];
 
 await mkdir('secrets', { recursive: true, mode: 0o700 });

@@ -2,8 +2,10 @@ import { createClient } from '@clickhouse/client';
 import { Pool } from 'pg';
 import { createPostgresLedger } from './ledger.js';
 
+export const createPostgresPool = ({ postgresUrl }) => new Pool({ connectionString: postgresUrl });
+
 export function createStorageClients({ postgresUrl, clickhouseUrl }) {
-  const pool = new Pool({ connectionString: postgresUrl });
+  const pool = createPostgresPool({ postgresUrl });
   const clickhouse = createClient({ url: clickhouseUrl });
   return {
     pool,

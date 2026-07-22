@@ -13,6 +13,9 @@ This document records the agreed Timothy-to-Eugene integration contract. It is t
 - `node simulations/run.js`: validate and evaluate every offline security scenario; exits non-zero on a mismatch.
 - `npm run secrets:init`: create ignored, owner-only local Compose secrets without replacing existing values.
 - `npm run migrate:messaging`: provision JetStream streams and durable consumers using the messaging administrator identity.
+- `npm run test:console-security`: build and exercise SEC-007 in Playwright Firefox.
+- `npm run verify:service-isolation`: prove live allow/deny boundaries for PostgreSQL, ClickHouse, and NATS identities.
+- `npm run verify:live-console`: verify the persisted compromise incident and 12-event timeline in the live SOC console.
 
 ## NEF and redaction
 
@@ -27,6 +30,8 @@ This document records the agreed Timothy-to-Eugene integration contract. It is t
 - Runtime credentials accept direct environment variables or `*_FILE` paths, never both. Defaults exist only with `NOLEN_LOCAL_DEV=true`.
 - Detection checkpoints its bounded event window and published incident IDs in PostgreSQL before acknowledging each event. Incidents are idempotently consumed into PostgreSQL and delivered through authenticated API reads and SSE.
 - NATS identities are subject-scoped by service. PostgreSQL identities are table/operation-scoped; ClickHouse separates event insertion from API reads.
+- Agent credentials are versioned owner-only JSON files, loaded before transport and atomically replaced during rotation. Tokens are non-enumerable in the agent object.
+- The console uses server-side revocable sessions, same-origin CSRF proofs, nonce CSP, no-store responses, authorized SSE, inert DOM text rendering, and audited admin-only incident status changes.
 
 ## Detection and file policy
 

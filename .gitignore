@@ -4,3 +4,4 @@ simulations/dataset/out/
 simulations/ml/out/
 secrets/*
 !secrets/README.md
+apps/console/dist/

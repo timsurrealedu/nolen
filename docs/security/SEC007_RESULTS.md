@@ -1,6 +1,6 @@
 # SEC-007 console security results
 
-**Executed:** 2026-07-22  
+**Executed:** 2026-07-22
 **Environment:** production asset build, Playwright 1.60.0, Firefox 150.0.2, isolated local API fixtures and live Compose services
 
 ## Automated evidence

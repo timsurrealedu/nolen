@@ -16,20 +16,26 @@ export async function loadNatsConfig(options = {}) {
   return { servers, user: await configValue('NATS_USER', options), pass: await configValue('NATS_PASSWORD', options) };
 }
 
-export async function loadStorageConfig(options = {}) {
+export async function loadPostgresConfig(options = {}) {
   const env = options.env ?? process.env;
   const postgresUrl = env.POSTGRES_URL || env.POSTGRES_URL_FILE
     ? await configValue('POSTGRES_URL', options)
     : env.POSTGRES_USER
       ? `postgres://${encodeURIComponent(env.POSTGRES_USER)}:${encodeURIComponent(await configValue('POSTGRES_PASSWORD', options))}@${env.POSTGRES_HOST ?? '127.0.0.1'}:${env.POSTGRES_PORT ?? '5432'}/${env.POSTGRES_DB ?? 'nolen'}`
       : await configValue('POSTGRES_URL', { ...options, localFallback: 'postgres://postgres:nolen@127.0.0.1:5432/nolen' });
+  return { postgresUrl };
+}
+
+export async function loadClickHouseConfig(options = {}) {
+  const env = options.env ?? process.env;
   const clickhouseUrl = env.CLICKHOUSE_URL || env.CLICKHOUSE_URL_FILE
     ? await configValue('CLICKHOUSE_URL', options)
     : env.CLICKHOUSE_USER
       ? `http://${encodeURIComponent(env.CLICKHOUSE_USER)}:${encodeURIComponent(await configValue('CLICKHOUSE_PASSWORD', options))}@${env.CLICKHOUSE_HOST ?? '127.0.0.1'}:${env.CLICKHOUSE_PORT ?? '8123'}`
       : await configValue('CLICKHOUSE_URL', { ...options, localFallback: 'http://127.0.0.1:8123' });
-  return {
-    postgresUrl,
-    clickhouseUrl
-  };
+  return { clickhouseUrl };
+}
+
+export async function loadStorageConfig(options = {}) {
+  return { ...await loadPostgresConfig(options), ...await loadClickHouseConfig(options) };
 }

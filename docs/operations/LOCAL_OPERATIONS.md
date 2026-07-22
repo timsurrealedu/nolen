@@ -17,6 +17,8 @@ npm run start:event-store
 npm run start:detection
 npm run start:incident-store
 npm run start:api
+npm run build:console
+npm run start:console
 ```
 
 ## Health and telemetry audit
@@ -41,6 +43,17 @@ npm run demo:live
 It sends one harmless synthetic failed-SSH event to local ingestion, waits for NATS/event-store persistence, then verifies that the analyst API can retrieve the same event. It uses the local development tokens and does not connect to remote hosts.
 
 The detection consumer checkpoints its bounded ten-minute correlation window and published-incident suppression state in PostgreSQL before acknowledging each event. The incident-store consumer writes incidents idempotently to PostgreSQL. The API reads those records and forwards new incidents to authenticated SSE clients.
+
+## Security verification
+
+```bash
+npm run test:console-security
+npm run verify:service-isolation
+npm run verify:live-incident
+npm run verify:live-console
+```
+
+The isolation and live commands require the Compose services and generated local secrets. `verify:live-incident` accepts `precursor`, `complete`, and `verify` phases plus a shared run ID for explicit restart testing.
 
 ## Retention preview
 
