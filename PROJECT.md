@@ -2,6 +2,10 @@
 
 This document records the agreed Timothy-to-Eugene integration contract. It is the source of truth until replaced by a versioned ADR or NEF revision.
 
+## Scope authority
+
+`specifiedPRD.md` v2.0 governs Team MVP acceptance. `PRD.md` v1.0 is broader product direction. The four required detection behaviors use five atomic rules because SSH brute force has known/unknown-user variants. The ten-behavior/three-correlation targets are post-MVP until the focused SSH-compromise demo passes end to end (`docs/adr/0003-team-mvp-scope-authority.md`).
+
 ## Commands
 
 - `npm test`: full repository test suite.

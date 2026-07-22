@@ -4,7 +4,7 @@
 |---|---|---|
 | Threat model | `docs/threat-model/THREAT_MODEL.md` | threats, trust boundaries, controls, residual risk |
 | Telemetry requirements | `docs/specs/telemetry-security-requirements.md` | required evidence and redaction constraints |
-| Detection content | `rules/` | four rules, one sequence rule, one correlation rule |
+| Detection content | `rules/` | four behaviors represented by five atomic rules, one sequence rule, one correlation rule |
 | ATT&CK rationale/confidence | `docs/detection/DETECTION_DESIGN.md` | mappings and deterministic confidence=80 |
 | Correlation implementation | `services/detection-engine/src/engine.js` | evidence IDs, entities, ATT&CK fields |
 | Safe simulation | `simulations/` | validated offline scenario matrix; no network or system mutation |
