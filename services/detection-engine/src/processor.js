@@ -3,11 +3,16 @@ import { validateEvent } from '../../../packages/nef/src/validate.js';
 
 export class InvalidDetectionEventError extends Error {}
 
-export function createDetectionProcessor({ publishIncident = async () => {}, historyMs = 10 * 60_000, maxEvents = 50_000 } = {}) {
+export function createDetectionProcessor({ publishIncident = async () => {}, stateStore, historyMs = 10 * 60_000, maxEvents = 50_000 } = {}) {
   const events = new Map();
   const publishedIncidents = new Set();
 
   return {
+    async restore() {
+      const state = await stateStore?.load();
+      for (const event of state?.events ?? []) events.set(event.id, event);
+      for (const id of state?.publishedIncidentIds ?? []) publishedIncidents.add(id);
+    },
     async process(event) {
       const validation = validateEvent(event);
       if (!validation.valid) throw new InvalidDetectionEventError(`invalid detection event: ${validation.errors.join('; ')}`);
@@ -24,6 +29,7 @@ export function createDetectionProcessor({ publishIncident = async () => {}, his
         publishedIncidents.add(incident.id);
         while (publishedIncidents.size > maxEvents) publishedIncidents.delete(publishedIncidents.values().next().value);
       }
+      await stateStore?.save({ events: [...events.values()], publishedIncidentIds: [...publishedIncidents] });
       return { detections, incidents };
     }
   };
