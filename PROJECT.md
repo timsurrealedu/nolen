@@ -11,6 +11,8 @@ This document records the agreed Timothy-to-Eugene integration contract. It is t
 - `npm test`: full repository test suite.
 - `node services/detection-engine/test/engine.test.js`: detailed detection checks.
 - `node simulations/run.js`: validate and evaluate every offline security scenario; exits non-zero on a mismatch.
+- `npm run secrets:init`: create ignored, owner-only local Compose secrets without replacing existing values.
+- `npm run migrate:messaging`: provision JetStream streams and durable consumers using the messaging administrator identity.
 
 ## NEF and redaction
 
@@ -22,6 +24,9 @@ This document records the agreed Timothy-to-Eugene integration contract. It is t
 - The agent redacts command-line secrets before local buffering or transport. Ingestion repeats redaction before persistence and records that it changed an event without logging the secret.
 - Ingestion passes redaction audit metadata to publishers as `{ redactedEventIds }`; the IDs contain no secret values.
 - Application event, incident, agent, and incident-stream endpoints default deny and require a bearer-token identity with role `analyst` or `admin`.
+- Runtime credentials accept direct environment variables or `*_FILE` paths, never both. Defaults exist only with `NOLEN_LOCAL_DEV=true`.
+- Detection checkpoints its bounded event window and published incident IDs in PostgreSQL before acknowledging each event. Incidents are idempotently consumed into PostgreSQL and delivered through authenticated API reads and SSE.
+- NATS identities are subject-scoped by service. PostgreSQL identities are table/operation-scoped; ClickHouse separates event insertion from API reads.
 
 ## Detection and file policy
 

@@ -7,7 +7,9 @@
     "start:ingestion": "node apps/ingestion/src/start.js",
     "start:api": "node apps/api/src/start.js",
     "migrate:storage": "node services/event-store/src/migrate.js",
+    "migrate:messaging": "node scripts/migrate-messaging.js",
     "start:event-store": "node services/event-store/src/start.js",
+    "start:incident-store": "node services/event-store/src/incident-consumer.js",
     "start:detection": "node services/detection-engine/src/consumer.js",
     "generate:dataset": "node simulations/dataset/generate.js",
     "build:feature-table": "node simulations/ml/build-feature-table.js",
@@ -18,7 +20,8 @@
     "audit:event-store": "node services/event-store/src/audit.js",
     "health:services": "node scripts/health-services.js",
     "retention:preview": "node services/event-store/src/retention-preview.js",
-    "demo:live": "node scripts/demo-live.js"
+    "demo:live": "node scripts/demo-live.js",
+    "secrets:init": "node scripts/init-local-secrets.js"
   },
   "dependencies": {
     "@clickhouse/client": "^1.12.1",

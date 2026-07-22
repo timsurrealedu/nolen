@@ -22,4 +22,4 @@
 - [x] API authorizes raw evidence retrieval; incident-status updates are not yet implemented.
 - [ ] Console passes the production-build authorization, XSS, CSP, CSRF, session, streaming, redaction, cache, and error tests in `docs/security/CONSOLE_SECURITY_ACCEPTANCE.md`. (`SEC-007`)
 - [x] Command-line redaction is applied before local buffering and stream publication. Display verification remains blocked by `SEC-007`.
-- [ ] NATS, ClickHouse, PostgreSQL, and API service credentials are separate and least-privileged. (`SEC-006B`)
+- [x] NATS, ClickHouse, PostgreSQL, and API service credentials are separate, file-backed, and least-privileged in configuration. Live cross-service denial verification remains pending. (`SEC-006B`)

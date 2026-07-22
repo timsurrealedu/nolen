@@ -1,7 +1,9 @@
 import { connect } from 'nats';
 import { createStorageClients } from '../services/event-store/src/clients.js';
+import { loadNatsConfig, loadStorageConfig } from '../packages/runtime-config/src/index.js';
 
-export async function checkLocalServices({ clients = createStorageClients(), connectNats = connect } = {}) {
+export async function checkLocalServices({ clients, connectNats = connect, natsOptions } = {}) {
+  clients ??= createStorageClients(await loadStorageConfig());
   const checks = {};
   try {
     await clients.pool.query('SELECT 1');
@@ -13,7 +15,7 @@ export async function checkLocalServices({ clients = createStorageClients(), con
     checks.clickhouse = 'healthy';
   } catch (error) { checks.clickhouse = `unhealthy: ${error.message}`; }
   try {
-    const connection = await connectNats({ servers: process.env.NATS_URL ?? 'nats://127.0.0.1:4222' });
+    const connection = await connectNats(natsOptions ?? await loadNatsConfig());
     await connection.drain();
     checks.nats = 'healthy';
   } catch (error) { checks.nats = `unhealthy: ${error.message}`; }

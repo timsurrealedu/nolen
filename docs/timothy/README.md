@@ -79,8 +79,9 @@ The console gate has a complete acceptance contract in `docs/security/CONSOLE_SE
 
 - Live Compose verification was unavailable during the latest review because the environment lacked Compose and Docker daemon access.
 - Detection sequence state is in memory. Restarting detection during an active sequence can miss the correlation; persistent state is required before reliability claims.
-- Incidents are durably published to JetStream but do not yet have a PostgreSQL incident-store consumer or console delivery path.
-- Local defaults are development credentials, NATS has no configured service identity, and transport security is not ready for non-local deployment.
+- Detection sequence state survives service restarts through a bounded PostgreSQL checkpoint.
+- Incidents are durably published to JetStream, idempotently stored in PostgreSQL, exposed through the analyst API, and delivered through authenticated SSE.
+- Runtime secrets support file mounts and fail closed outside explicit local mode. NATS, PostgreSQL, and ClickHouse use separate scoped service identities; live denial verification remains part of the Compose gate.
 - The console is absent, so event-derived output encoding and browser controls remain unverified.
 
 These limitations keep Nolen restricted to isolated local development. They are documented rather than hidden behind production-readiness claims.

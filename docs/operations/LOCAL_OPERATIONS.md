@@ -3,9 +3,11 @@
 ## Start local infrastructure
 
 ```bash
+NOLEN_LOCAL_DEV=true npm run secrets:init
 docker compose up -d
-npm run migrate:storage
 ```
+
+Compose initializes schemas and least-privilege identities on a new data directory. Host processes must use each service's `NATS_USER`, `NATS_PASSWORD_FILE`, `POSTGRES_USER`, `POSTGRES_PASSWORD_FILE`, `CLICKHOUSE_USER`, and `CLICKHOUSE_PASSWORD_FILE`. Production mode has no credential fallbacks. Use the NATS `admin` identity only for `npm run migrate:messaging`.
 
 Run these three long-lived services in separate terminals:
 
@@ -13,6 +15,7 @@ Run these three long-lived services in separate terminals:
 npm run start:ingestion
 npm run start:event-store
 npm run start:detection
+npm run start:incident-store
 npm run start:api
 ```
 
@@ -37,7 +40,7 @@ npm run demo:live
 
 It sends one harmless synthetic failed-SSH event to local ingestion, waits for NATS/event-store persistence, then verifies that the analyst API can retrieve the same event. It uses the local development tokens and does not connect to remote hosts.
 
-The detection consumer validates stream events again, keeps a bounded ten-minute in-memory correlation window, and publishes completed incidents once. Restart-persistent sequence state and an incident-store consumer are not yet implemented; restarting detection during an active sequence can therefore miss that correlation.
+The detection consumer checkpoints its bounded ten-minute correlation window and published-incident suppression state in PostgreSQL before acknowledging each event. The incident-store consumer writes incidents idempotently to PostgreSQL. The API reads those records and forwards new incidents to authenticated SSE clients.
 
 ## Retention preview
 

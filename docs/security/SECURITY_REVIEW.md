@@ -28,12 +28,12 @@
 | SEC-004 | High | The application API exposed events, incidents, agents, and incident SSE without authentication or authorization. | Default-deny access and require the `analyst` or `admin` role. | Nolan | Fixed |
 | SEC-005 | Medium | Credential-file permissions and rotation/revocation procedures are not implemented or tested. | Store credentials with owner-only permissions; add rotation and revocation tests/runbook steps. | Nolan, reviewed by Timothy | Open |
 | SEC-006A | Medium | Storage idempotency was not implemented. | Claim each event ID through PostgreSQL before ClickHouse insertion; roll back failed claims and retain ClickHouse deduplication as defense in depth. | Eugene + Nolan | Fixed; automated unit verification passes. Live Compose verification remains pending. |
-| SEC-006B | Medium | NATS, ClickHouse, PostgreSQL, and API services do not use separate least-privilege identities. Compose and service clients use shared development defaults. | Provision distinct runtime identities and secrets, remove application fallbacks outside explicit local mode, and test denied cross-service access before non-local deployment. | Eugene + Nolan, reviewed by Timothy | Open |
+| SEC-006B | Medium | NATS, ClickHouse, PostgreSQL, and API services used shared development defaults. | Provision distinct runtime identities and secrets, remove application fallbacks outside explicit local mode, and test denied cross-service access before non-local deployment. | Eugene + Nolan, reviewed by Timothy | Implemented in configuration and fail-closed tests; live Compose denial verification pending. |
 | SEC-007 | Medium | Console output encoding, CSP, session handling, and CSRF controls cannot be verified because the console is absent. | Implement and pass `docs/security/CONSOLE_SECURITY_ACCEPTANCE.md` against the production console build. | Dillon + Nolan, reviewed by Timothy | Blocked; acceptance contract prepared. |
 
 ## Release gate
 
-SEC-001 through SEC-004 and SEC-006A are closed with automated regression coverage. SEC-005, SEC-006B, and SEC-007 keep the build limited to isolated local development. Storage idempotency still needs live-stack verification because this review environment has no Compose installation or Docker daemon access.
+SEC-001 through SEC-004 and SEC-006A are closed with automated regression coverage. SEC-005 and SEC-007 remain open. SEC-006B still requires live cross-service denial verification before non-local deployment. Storage and identity controls need live-stack verification when Compose and Docker are available.
 
 Re-run after fixes:
 
