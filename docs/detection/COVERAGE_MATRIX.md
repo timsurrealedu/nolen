@@ -17,8 +17,8 @@
 - [ ] Agent credential is stored with owner-only permissions and never logged. (`SEC-005`)
 - [x] Ingestion authenticates agent identity, rejects revoked identities, limits batch/request size, and rate-limits per identity.
 - [x] NEF validation and defense-in-depth redaction occur before stream publication; validation errors contain no secrets.
-- [ ] Storage enforces event-ID idempotency and detection receives unique IDs. Detection passes; storage remains open (`SEC-006`).
+- [x] Storage claims unique event IDs before ClickHouse insertion, rolls back failed claims, and detection independently deduplicates event IDs. Automated tests pass; live Compose verification remains pending. (`SEC-006A`)
 - [x] API authorizes raw evidence retrieval; incident-status updates are not yet implemented.
 - [ ] Console escapes all event-derived fields and protects state-changing requests. (`SEC-007`)
 - [x] Command-line redaction is applied before local buffering and stream publication. Display verification remains blocked by `SEC-007`.
-- [ ] NATS, ClickHouse, PostgreSQL, and API service credentials are separate and least-privileged. (`SEC-006`)
+- [ ] NATS, ClickHouse, PostgreSQL, and API service credentials are separate and least-privileged. (`SEC-006B`)
