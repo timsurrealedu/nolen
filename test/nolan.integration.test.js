@@ -90,3 +90,17 @@ test('application API returns a bounded telemetry audit only to authorized analy
   assert.equal(invalid.status, 400);
   server.close();
 });
+
+test('application API reads persistent incidents with a bounded limit', async () => {
+  let options;
+  const storedIncident = { id: 'incident-1', severity: 'high' };
+  const server = createApplicationServer({ incidentRepository: { list: async input => { options = input; return [storedIncident]; } }, users: { analyst: { token: 'analyst', role: 'analyst' } } });
+  await new Promise(resolve => server.listen(0, resolve));
+  const endpoint = `http://127.0.0.1:${server.address().port}/v1/incidents`;
+  const response = await fetch(`${endpoint}?limit=20`, { headers: { authorization: 'Bearer analyst' } });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { incidents: [storedIncident] });
+  assert.deepEqual(options, { limit: 20 });
+  assert.equal((await fetch(`${endpoint}?limit=0`, { headers: { authorization: 'Bearer analyst' } })).status, 400);
+  await new Promise(resolve => server.close(resolve));
+});
