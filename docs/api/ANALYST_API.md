@@ -97,8 +97,8 @@ Errors:
 
 ## Other current endpoints
 
-- `GET /v1/incidents`
+- `GET /v1/incidents?limit=100` (PostgreSQL-backed; `limit` is 1–1,000)
 - `GET /v1/agents`
 - `GET /v1/stream/incidents` (server-sent events)
 
-These currently retain their existing response contracts. The audit endpoint is read-only and advisory; it does not create, suppress, or change security incidents.
+New incidents are also delivered through the authenticated SSE endpoint after JetStream delivery. The audit endpoint is read-only and advisory; it does not create, suppress, or change security incidents.

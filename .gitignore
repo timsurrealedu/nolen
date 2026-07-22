@@ -2,3 +2,6 @@ graphify-out/
 node_modules/
 simulations/dataset/out/
 simulations/ml/out/
+secrets/*
+!secrets/README.md
+apps/console/dist/

@@ -1,9 +1,14 @@
 import { EventBuffer } from './buffer.js';
 import { sanitizeEvent } from '../../packages/nef/src/validate.js';
+import { readAgentCredential } from './credentials.js';
 
 export class NolenAgent {
+  static async fromCredentialFile(path, options = {}) {
+    const credential = await readAgentCredential(path);
+    return new NolenAgent({ ...options, endpoint: options.endpoint ?? credential.endpoint, token: credential.token });
+  }
   constructor({ endpoint, token, bufferPath, batchSize = 100, fetchImpl = fetch }) {
-    this.endpoint = endpoint.replace(/\/$/, ''); this.token = token; this.buffer = new EventBuffer(bufferPath);
+    this.endpoint = endpoint.replace(/\/$/, ''); Object.defineProperty(this, 'token', { value: token, writable: true }); this.buffer = new EventBuffer(bufferPath);
     this.batchSize = batchSize; this.fetch = fetchImpl;
   }
   async collect(events) { await this.buffer.enqueue(events.map(event => sanitizeEvent(event).event)); }

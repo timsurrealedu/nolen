@@ -13,7 +13,7 @@ const filterInMemoryEvents = (events, filters) => events.filter(event => {
   });
 });
 
-export function createApplicationServer({ events = [], eventRepository, telemetryAuditor, incidents = [], agents = [], users = {} } = {}) {
+export function createApplicationServer({ events = [], eventRepository, telemetryAuditor, incidents = [], incidentRepository, agents = [], users = {} } = {}) {
   const subscribers = new Set();
   const server = createServer(async (request, response) => {
     const url = new URL(request.url, 'http://localhost');
@@ -38,7 +38,14 @@ export function createApplicationServer({ events = [], eventRepository, telemetr
         return json(response, 200, await telemetryAuditor.audit({ limit }));
       } catch { return json(response, 500, { error: 'telemetry_audit_failed' }); }
     }
-    if (request.method === 'GET' && url.pathname === '/v1/incidents') return json(response, 200, { incidents });
+    if (request.method === 'GET' && url.pathname === '/v1/incidents') {
+      try {
+        const limit = url.searchParams.has('limit') ? Number(url.searchParams.get('limit')) : undefined;
+        if (limit !== undefined && (!Number.isInteger(limit) || limit < 1 || limit > 1000)) return json(response, 400, { error: 'invalid_incident_limit' });
+        const stored = incidentRepository ? await incidentRepository.list({ ...(limit === undefined ? {} : { limit }) }) : incidents;
+        return json(response, 200, { incidents: stored });
+      } catch (error) { return json(response, error instanceof RangeError ? 400 : 500, { error: error instanceof RangeError ? 'invalid_incident_limit' : 'incident_search_failed' }); }
+    }
     if (request.method === 'GET' && url.pathname === '/v1/agents') return json(response, 200, { agents });
     if (request.method === 'GET' && url.pathname === '/v1/stream/incidents') { response.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' }); subscribers.add(response); request.on('close', () => subscribers.delete(response)); return; }
     return json(response, 404, { error: 'not_found' });

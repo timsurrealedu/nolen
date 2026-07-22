@@ -5,20 +5,18 @@ export const EVENTS_STREAM = 'NOLEN_EVENTS';
 export const INCIDENTS_SUBJECT = 'incidents.created';
 export const INCIDENTS_STREAM = 'NOLEN_INCIDENTS';
 
-export async function connectEventBus({ servers = process.env.NATS_URL ?? 'nats://127.0.0.1:4222' } = {}) {
-  const connection = await connect({ servers });
-  const manager = await connection.jetstreamManager();
-  try {
-    await manager.streams.info(EVENTS_STREAM);
-  } catch {
-    await manager.streams.add({ name: EVENTS_STREAM, subjects: [RAW_EVENTS_SUBJECT], storage: 'file', retention: 'limits' });
+export async function connectEventBus({ ensureStreams = false, ...options }) {
+  const connection = await connect(options);
+  const jetstream = connection.jetstream();
+  let manager;
+  if (ensureStreams) {
+    manager = await connection.jetstreamManager();
+    try { await manager.streams.info(EVENTS_STREAM); }
+    catch { await manager.streams.add({ name: EVENTS_STREAM, subjects: [RAW_EVENTS_SUBJECT], storage: 'file', retention: 'limits' }); }
+    try { await manager.streams.info(INCIDENTS_STREAM); }
+    catch { await manager.streams.add({ name: INCIDENTS_STREAM, subjects: [INCIDENTS_SUBJECT], storage: 'file', retention: 'limits' }); }
   }
-  try {
-    await manager.streams.info(INCIDENTS_STREAM);
-  } catch {
-    await manager.streams.add({ name: INCIDENTS_STREAM, subjects: [INCIDENTS_SUBJECT], storage: 'file', retention: 'limits' });
-  }
-  return { connection, manager, jetstream: connection.jetstream(), codec: JSONCodec() };
+  return { connection, manager, jetstream, codec: JSONCodec() };
 }
 
 export function createIncidentPublisher({ jetstream, codec = JSONCodec() }) {

@@ -69,9 +69,9 @@ Closed controls include ingestion authentication/revocation, request and batch l
 
 Open release gates:
 
-- `SEC-005`: owner-only credential storage plus rotation/revocation procedures and tests.
-- `SEC-006B`: separate least-privilege identities and secrets for NATS, ClickHouse, PostgreSQL, and API services.
-- `SEC-007`: production console authorization, XSS, CSP, CSRF, session, streaming, redaction, cache, and error tests.
+- `SEC-005`: closed with owner-only atomic credential storage plus rotation/revocation procedures and tests.
+- `SEC-006B`: closed with live-verified least-privilege identities and file-backed secrets.
+- `SEC-007`: closed with production console authorization, XSS, CSP, CSRF, session, streaming, redaction, cache, and error evidence.
 
 The console gate has a complete acceptance contract in `docs/security/CONSOLE_SECURITY_ACCEPTANCE.md`.
 
@@ -79,8 +79,9 @@ The console gate has a complete acceptance contract in `docs/security/CONSOLE_SE
 
 - Live Compose verification was unavailable during the latest review because the environment lacked Compose and Docker daemon access.
 - Detection sequence state is in memory. Restarting detection during an active sequence can miss the correlation; persistent state is required before reliability claims.
-- Incidents are durably published to JetStream but do not yet have a PostgreSQL incident-store consumer or console delivery path.
-- Local defaults are development credentials, NATS has no configured service identity, and transport security is not ready for non-local deployment.
-- The console is absent, so event-derived output encoding and browser controls remain unverified.
+- Detection sequence state survives service restarts through a bounded PostgreSQL checkpoint.
+- Incidents are durably published to JetStream, idempotently stored in PostgreSQL, exposed through the analyst API, and delivered through authenticated SSE.
+- Runtime secrets support file mounts and fail closed outside explicit local mode. NATS, PostgreSQL, and ClickHouse use separate scoped service identities; live denial verification remains part of the Compose gate.
+- The SOC console provides incident triage, evidence timelines, event search, endpoints, server-side sessions, status audit changes, and live incident delivery.
 
 These limitations keep Nolen restricted to isolated local development. They are documented rather than hidden behind production-readiness claims.

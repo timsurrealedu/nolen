@@ -15,11 +15,11 @@
 
 ## Integration security review checklist
 
-- [ ] Agent credential is stored with owner-only permissions and never logged. (`SEC-005`)
+- [x] Agent credential is stored in an atomic owner-only file, omitted from serialization/logs, and covered by rotation/revocation tests and runbook. (`SEC-005`)
 - [x] Ingestion authenticates agent identity, rejects revoked identities, limits batch/request size, and rate-limits per identity.
 - [x] NEF validation and defense-in-depth redaction occur before stream publication; validation errors contain no secrets.
 - [x] Storage claims unique event IDs before ClickHouse insertion, rolls back failed claims, and detection independently deduplicates event IDs. Automated tests pass; live Compose verification remains pending. (`SEC-006A`)
 - [x] API authorizes raw evidence retrieval; incident-status updates are not yet implemented.
-- [ ] Console passes the production-build authorization, XSS, CSP, CSRF, session, streaming, redaction, cache, and error tests in `docs/security/CONSOLE_SECURITY_ACCEPTANCE.md`. (`SEC-007`)
+- [x] Console passes production-build authorization, XSS, CSP, CSRF, session, streaming, redaction, cache, error, keyboard, and responsive tests. (`SEC-007`)
 - [x] Command-line redaction is applied before local buffering and stream publication. Display verification remains blocked by `SEC-007`.
-- [ ] NATS, ClickHouse, PostgreSQL, and API service credentials are separate and least-privileged. (`SEC-006B`)
+- [x] NATS, ClickHouse, PostgreSQL, and API service credentials are separate, file-backed, least-privileged, and live cross-service denials pass. (`SEC-006B`)
