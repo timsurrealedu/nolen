@@ -24,6 +24,8 @@ npm run audit:event-store
 
 The health command checks PostgreSQL, ClickHouse, and NATS without changing data. The telemetry audit reads a bounded sample of redacted NEF records from ClickHouse and reports NEF validity, event mix, future timestamps, duplicate IDs, and canonical ML-entity coverage.
 
+The same read-only report is available to an authenticated analyst through `GET /v1/audit/telemetry?limit=10000` with `Bearer local-analyst-token`. This is an API for a future dashboard; it does not expose raw agent credentials or modify stored telemetry.
+
 ## End-to-end demo
 
 After all services above are running:

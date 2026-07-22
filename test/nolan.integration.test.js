@@ -76,3 +76,17 @@ test('application API delegates persistent event searches to the repository', as
   assert.deepEqual(receivedFilters, { category: 'authentication', hostId: 'host-1', limit: '20' });
   await new Promise(resolve => server.close(resolve));
 });
+
+test('application API returns a bounded telemetry audit only to authorized analysts', async () => {
+  let options;
+  const server = createApplicationServer({ telemetryAuditor: { audit: async input => { options = input; return { summary: { status: 'healthy' } }; } }, users: { analyst: { token: 'analyst-token', role: 'analyst' } } });
+  await new Promise(resolve => server.listen(0, resolve));
+  const port = server.address().port;
+  const response = await fetch(`http://127.0.0.1:${port}/v1/audit/telemetry?limit=12`, { headers: { Authorization: 'Bearer analyst-token' } });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { summary: { status: 'healthy' } });
+  assert.deepEqual(options, { limit: 12 });
+  const invalid = await fetch(`http://127.0.0.1:${port}/v1/audit/telemetry?limit=0`, { headers: { Authorization: 'Bearer analyst-token' } });
+  assert.equal(invalid.status, 400);
+  server.close();
+});

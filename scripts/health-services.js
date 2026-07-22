@@ -8,7 +8,8 @@ export async function checkLocalServices({ clients = createStorageClients(), con
     checks.postgres = 'healthy';
   } catch (error) { checks.postgres = `unhealthy: ${error.message}`; }
   try {
-    await clients.clickhouse.query({ query: 'SELECT 1', format: 'JSONEachRow' });
+    const result = await clients.clickhouse.query({ query: 'SELECT 1 AS ok', format: 'JSONEachRow' });
+    await result.json();
     checks.clickhouse = 'healthy';
   } catch (error) { checks.clickhouse = `unhealthy: ${error.message}`; }
   try {

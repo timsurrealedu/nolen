@@ -13,7 +13,7 @@ const filterInMemoryEvents = (events, filters) => events.filter(event => {
   });
 });
 
-export function createApplicationServer({ events = [], eventRepository, incidents = [], agents = [], users = {} } = {}) {
+export function createApplicationServer({ events = [], eventRepository, telemetryAuditor, incidents = [], agents = [], users = {} } = {}) {
   const subscribers = new Set();
   const server = createServer(async (request, response) => {
     const url = new URL(request.url, 'http://localhost');
@@ -29,6 +29,14 @@ export function createApplicationServer({ events = [], eventRepository, incident
       } catch (error) {
         return json(response, error instanceof RangeError ? 400 : 500, { error: error instanceof RangeError ? 'invalid_event_filter' : 'event_search_failed' });
       }
+    }
+    if (request.method === 'GET' && url.pathname === '/v1/audit/telemetry') {
+      try {
+        const limit = url.searchParams.has('limit') ? Number(url.searchParams.get('limit')) : undefined;
+        if (limit !== undefined && (!Number.isInteger(limit) || limit < 1 || limit > 100_000)) return json(response, 400, { error: 'invalid_audit_limit' });
+        if (!telemetryAuditor) return json(response, 503, { error: 'telemetry_audit_unavailable' });
+        return json(response, 200, await telemetryAuditor.audit({ limit }));
+      } catch { return json(response, 500, { error: 'telemetry_audit_failed' }); }
     }
     if (request.method === 'GET' && url.pathname === '/v1/incidents') return json(response, 200, { incidents });
     if (request.method === 'GET' && url.pathname === '/v1/agents') return json(response, 200, { agents });

@@ -89,6 +89,7 @@ See the [threat model](docs/threat-model/THREAT_MODEL.md) and [telemetry securit
 - [Integration security review](docs/security/SECURITY_REVIEW.md)
 - [ML labeling guidance](docs/detection/ML_LABELING.md)
 - [Local operations and demo](docs/operations/LOCAL_OPERATIONS.md)
+- [Analyst API contract](docs/api/ANALYST_API.md)
 - [Safe SSH-compromise simulation](simulations/ssh-compromise/README.md)
 
 ## Contributing
