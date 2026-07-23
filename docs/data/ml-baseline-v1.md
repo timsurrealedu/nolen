@@ -42,7 +42,7 @@ It is deliberately advisory-only: it cannot create, suppress, close, reprioritiz
 npm run evaluate:challenge
 ```
 
-This evaluation trains only on the standard dataset's training partition, then tests two entirely separate challenge scenarios: benign retries close to the brute-force threshold and a low-and-slow compromise with fewer than ten failures. It is designed to expose pattern memorization and blind spots. Its result belongs in `simulations/ml/out/challenge-report.json` and must be reported separately from the standard holdout score.
+This evaluation trains only on the standard dataset's training partition, then tests seven entirely separate challenge scenarios: benign retries near the threshold; low-volume and slow brute force; low-and-slow compromise; success after threshold without privilege escalation; success from a changed source; and a complete compromise variation. Each scenario declares its expected deterministic rule IDs and incident count. These rows are held-out evaluation data and must never be added to training. Results belong in `simulations/ml/out/challenge-report.json` and must be reported separately from the standard holdout score.
 
 ## Current limit
 
