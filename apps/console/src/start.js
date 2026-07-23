@@ -2,6 +2,7 @@ import { createConsoleServer } from './server.js';
 import { createStorageClients } from '../../../services/event-store/src/clients.js';
 import { createPostgresIncidentRepository } from '../../../services/event-store/src/incidents.js';
 import { createClickHouseEventRepository } from '../../../services/event-store/src/search.js';
+import { createShadowEnrichmentRepository } from '../../../services/event-store/src/shadow-enrichment.js';
 import { configValue, loadNatsConfig, loadStorageConfig } from '../../../packages/runtime-config/src/index.js';
 import { connectEventBus, INCIDENTS_STREAM } from '../../../packages/event-bus/src/nats.js';
 import { loadRules } from '../../../packages/rule-parser/src/load.js';
@@ -14,6 +15,7 @@ const server = createConsoleServer({
   },
   incidentRepository: createPostgresIncidentRepository(clients.pool),
   eventRepository: createClickHouseEventRepository(clients.clickhouse),
+  shadowEnrichmentRepository: createShadowEnrichmentRepository(),
   rules: [...loadRules().values()].map(({ id, name, severity, mitre }) => ({ id, name, severity, mitre })),
   secure: process.env.NOLEN_LOCAL_DEV !== 'true',
   assetDirectory: new URL('../dist/', import.meta.url)

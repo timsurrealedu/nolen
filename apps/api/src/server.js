@@ -13,7 +13,7 @@ const filterInMemoryEvents = (events, filters) => events.filter(event => {
   });
 });
 
-export function createApplicationServer({ events = [], eventRepository, telemetryAuditor, incidents = [], incidentRepository, agents = [], users = {} } = {}) {
+export function createApplicationServer({ events = [], eventRepository, telemetryAuditor, shadowEnrichmentRepository, incidents = [], incidentRepository, agents = [], users = {} } = {}) {
   const subscribers = new Set();
   const server = createServer(async (request, response) => {
     const url = new URL(request.url, 'http://localhost');
@@ -37,6 +37,14 @@ export function createApplicationServer({ events = [], eventRepository, telemetr
         if (!telemetryAuditor) return json(response, 503, { error: 'telemetry_audit_unavailable' });
         return json(response, 200, await telemetryAuditor.audit({ limit }));
       } catch { return json(response, 500, { error: 'telemetry_audit_failed' }); }
+    }
+    if (request.method === 'GET' && url.pathname === '/v1/ml/shadow-enrichment') {
+      try {
+        const limit = url.searchParams.has('limit') ? Number(url.searchParams.get('limit')) : 50;
+        if (!Number.isInteger(limit) || limit < 1 || limit > 1_000) return json(response, 400, { error: 'invalid_shadow_enrichment_limit' });
+        if (!shadowEnrichmentRepository) return json(response, 503, { error: 'shadow_enrichment_unavailable' });
+        return json(response, 200, await shadowEnrichmentRepository.read({ limit }));
+      } catch { return json(response, 503, { error: 'shadow_enrichment_unavailable' }); }
     }
     if (request.method === 'GET' && url.pathname === '/v1/incidents') {
       try {

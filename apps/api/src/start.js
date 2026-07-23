@@ -3,6 +3,7 @@ import { createStorageClients } from '../../../services/event-store/src/clients.
 import { createClickHouseEventRepository } from '../../../services/event-store/src/search.js';
 import { createClickHouseTelemetryAuditor } from '../../../services/event-store/src/telemetry-audit.js';
 import { createPostgresIncidentRepository } from '../../../services/event-store/src/incidents.js';
+import { createShadowEnrichmentRepository } from '../../../services/event-store/src/shadow-enrichment.js';
 import { connectEventBus, INCIDENTS_STREAM } from '../../../packages/event-bus/src/nats.js';
 import { configValue, loadNatsConfig, loadStorageConfig } from '../../../packages/runtime-config/src/index.js';
 
@@ -11,6 +12,7 @@ const port = process.env.API_PORT ?? 3002;
 const server = createApplicationServer({
   eventRepository: createClickHouseEventRepository(clients.clickhouse),
   telemetryAuditor: createClickHouseTelemetryAuditor(clients.clickhouse),
+  shadowEnrichmentRepository: createShadowEnrichmentRepository(),
   incidentRepository: createPostgresIncidentRepository(clients.pool),
   users: { local: { token: await configValue('NOLEN_ANALYST_TOKEN', { localFallback: 'local-analyst-token' }), role: 'analyst' } }
 });

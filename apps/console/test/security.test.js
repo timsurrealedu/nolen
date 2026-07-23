@@ -28,12 +28,12 @@ async function login(origin, username = 'analyst', password = `${username}-passw
 
 test('CONSOLE-AUTH-001/002 protected routes and revoked credentials fail closed', async () => {
   const app = await fixture();
-  for (const path of ['/', '/events', '/endpoints', '/incidents/incident-1']) {
+  for (const path of ['/', '/events', '/endpoints', '/ml-advisory', '/incidents/incident-1']) {
     const response = await fetch(`${app.origin}${path}`, { redirect: 'manual' });
     assert.equal(response.status, 303); assert.equal(response.headers.get('location'), '/login');
     assert.ok(!(await response.text()).includes(hostile));
   }
-  for (const path of ['/api/incidents', '/api/events', '/api/agents', '/api/rules', '/api/stream/incidents']) assert.equal((await fetch(`${app.origin}${path}`)).status, 401);
+  for (const path of ['/api/incidents', '/api/events', '/api/agents', '/api/rules', '/api/ml/shadow-enrichment', '/api/stream/incidents']) assert.equal((await fetch(`${app.origin}${path}`)).status, 401);
   assert.equal((await login(app.origin, 'revoked')).response.headers.get('location'), '/login?failed=1');
   await app.close();
 });
@@ -89,6 +89,14 @@ test('CONSOLE-SSE sessions are required and revocation closes active delivery', 
   app.server.revokeUser('analyst');
   assert.equal((await response.body.getReader().read()).done, true);
   assert.equal((await fetch(`${app.origin}/api/incidents`, { headers: { cookie: identity.cookie } })).status, 401);
+  await app.close();
+});
+
+test('CONSOLE-ML advisory enrichment is analyst-readable and cannot mutate incidents', async () => {
+  const app = await fixture({ shadowEnrichmentRepository: { read: async () => ({ advisory_only: true, enrichments: [{ risk_band: 'high' }] }) } }), identity = await login(app.origin);
+  const response = await fetch(`${app.origin}/api/ml/shadow-enrichment`, { headers: { cookie: identity.cookie } });
+  assert.deepEqual(await response.json(), { advisory_only: true, enrichments: [{ risk_band: 'high' }] });
+  assert.deepEqual(app.updates, []);
   await app.close();
 });
 

@@ -1,5 +1,5 @@
 const root = document.querySelector('#app');
-const state = { session: null, incidents: [], events: [], agents: [], view: location.pathname === '/events' ? 'events' : location.pathname === '/endpoints' ? 'endpoints' : 'incidents' };
+const state = { session: null, incidents: [], events: [], agents: [], enrichment: null, enrichmentError: false, view: location.pathname === '/events' ? 'events' : location.pathname === '/endpoints' ? 'endpoints' : location.pathname === '/ml-advisory' ? 'ml' : 'incidents' };
 const dateTime = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'medium' });
 const el = (tag, options = {}, children = []) => { const node = document.createElement(tag); for (const [key, value] of Object.entries(options)) key === 'class' ? node.className = value : key.startsWith('on') ? node.addEventListener(key.slice(2).toLowerCase(), value) : node.setAttribute(key, value); for (const child of [].concat(children)) node.append(child?.nodeType ? child : document.createTextNode(String(child ?? ''))); return node; };
 const request = async (path, options) => { const response = await fetch(path, { credentials: 'same-origin', ...options }); if (response.status === 401) location.assign('/login'); if (!response.ok) throw new Error(response.status === 403 ? 'Your role cannot perform this action.' : 'The request could not be completed.'); return response.json(); };
@@ -7,7 +7,7 @@ const severity = value => el('span', { class: `severity severity-${value}` }, [v
 const empty = (title, detail) => el('div', { class: 'empty' }, [el('h3', {}, [title]), el('p', {}, [detail])]);
 
 function nav() {
-  const links = [['incidents', 'Incidents', '/'], ['events', 'Event Explorer', '/events'], ['endpoints', 'Endpoints', '/endpoints']];
+  const links = [['incidents', 'Incidents', '/'], ['events', 'Event Explorer', '/events'], ['ml', 'ML Advisory', '/ml-advisory'], ['endpoints', 'Endpoints', '/endpoints']];
   return el('aside', { class: 'rail' }, [
     el('div', { class: 'brand' }, [el('span', { class: 'brand-mark', 'aria-hidden': 'true' }, ['N']), el('span', {}, ['Nolen'])]),
     el('nav', { 'aria-label': 'Primary' }, links.map(([id, label, href]) => el('a', { href, class: state.view === id ? 'active' : '', ...(state.view === id ? { 'aria-current': 'page' } : {}) }, [label]))),
@@ -51,6 +51,14 @@ function endpointsView() {
   return [header('Endpoint Status', 'Enrollment and heartbeat state for monitored systems.'), el('section', { class: 'section' }, [list])];
 }
 
+function advisoryView() {
+  if (state.enrichmentError) return [header('ML Advisory', 'Offline, explainable enrichment. It never changes incidents.'), empty('Shadow enrichment unavailable', 'Run npm run ml:pipeline to generate the local advisory report.')];
+  const report = state.enrichment, rows = report?.enrichments ?? [];
+  const table = el('table', {}, [el('thead', {}, [el('tr', {}, ['Risk', 'Entity', 'Window', 'Probability', 'Top signal'].map(label => el('th', { scope: 'col' }, [label])))]), el('tbody', {}, rows.map(item => el('tr', {}, [el('td', {}, [severity(item.risk_band)]), el('td', {}, [`${item.entity?.host_id ?? 'Unknown host'} · ${item.entity?.user_name ?? 'unknown user'}`]), el('td', {}, [item.window_start]), el('td', {}, [`${(Number(item.probability) * 100).toFixed(1)}%`]), el('td', {}, [item.top_features?.[0]?.feature ?? 'No signal'])])))]);
+  const content = rows.length ? el('section', { class: 'section' }, [el('div', { class: 'section-heading' }, [el('h2', {}, ['Recent scored windows']), el('span', {}, ['Top 50'])]), el('div', { class: 'table-wrap' }, [table])]) : empty('No advisory windows', 'Run the ML pipeline to generate scored entity windows.');
+  return [header('ML Advisory', 'Offline, explainable enrichment. It never changes incidents.'), el('section', { class: 'advisory-note' }, ['Advisory only — this view cannot create, suppress, close, reprioritize, or modify deterministic incidents.']), el('section', { class: 'metrics', 'aria-label': 'ML advisory summary' }, [el('div', {}, [el('strong', {}, [report?.enrichment_count ?? 0]), el('span', {}, ['Scored windows'])]), el('div', {}, [el('strong', {}, [report?.data_quality_status ?? 'unknown']), el('span', {}, ['Data quality'])]), el('div', {}, [el('strong', {}, [report?.model_version ?? 'unknown']), el('span', {}, ['Model version'])])]), content];
+}
+
 function openIncident(incident) {
   history.pushState({}, '', `/incidents/${encodeURIComponent(incident.id)}`);
   const timeline = (incident.evidenceEventIds ?? []).map((id, index) => el('li', {}, [el('span', {}, [String(index + 1)]), el('code', {}, [id])]));
@@ -63,10 +71,11 @@ async function searchEvents(event) { event.preventDefault(); const query = new U
 async function updateStatus(event, incident, detail) { event.preventDefault(); try { const { incident: updated } = await request(`/api/incidents/${encodeURIComponent(incident.id)}/status`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-csrf-token': state.session.csrf }, body: JSON.stringify({ status: new FormData(event.currentTarget).get('status') }) }); state.incidents = state.incidents.map(item => item.id === updated.id ? updated : item); detail.close(); render(); } catch (error) { showError(error.message); } }
 async function logout() { await fetch('/logout', { method: 'POST', credentials: 'same-origin', headers: { origin: location.origin, 'x-csrf-token': state.session.csrf } }); location.assign('/login'); }
 function showError(message) { root.prepend(el('div', { class: 'notice', role: 'alert' }, [message])); }
-function render() { root.replaceChildren(nav(), el('main', { id: 'workspace', class: 'workspace', tabindex: '-1' }, state.view === 'events' ? eventsView() : state.view === 'endpoints' ? endpointsView() : incidentsView())); }
+function render() { root.replaceChildren(nav(), el('main', { id: 'workspace', class: 'workspace', tabindex: '-1' }, state.view === 'events' ? eventsView() : state.view === 'endpoints' ? endpointsView() : state.view === 'ml' ? advisoryView() : incidentsView())); }
 
 try {
   [state.session, { incidents: state.incidents }, { agents: state.agents }] = await Promise.all([request('/api/session'), request('/api/incidents'), request('/api/agents')]);
+  if (state.view === 'ml') try { state.enrichment = await request('/api/ml/shadow-enrichment'); } catch { state.enrichmentError = true; }
   render();
   const stream = new EventSource('/api/stream/incidents');
   stream.addEventListener('incident', event => { const incident = JSON.parse(event.data); if (!state.incidents.some(item => item.id === incident.id)) state.incidents.unshift(incident); if (state.view === 'incidents') render(); });

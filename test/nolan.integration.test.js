@@ -119,3 +119,14 @@ test('application API reads persistent incidents with a bounded limit', async ()
   assert.equal((await fetch(`${endpoint}?limit=0`, { headers: { authorization: 'Bearer analyst' } })).status, 400);
   await new Promise(resolve => server.close(resolve));
 });
+
+test('application API exposes advisory-only ML enrichment without incident mutation', async () => {
+  const report = { advisory_only: true, enrichments: [{ risk_band: 'high' }] };
+  const server = createApplicationServer({ shadowEnrichmentRepository: { read: async ({ limit }) => ({ ...report, limit }) }, users: { analyst: { token: 'analyst', role: 'analyst' } } });
+  await new Promise(resolve => server.listen(0, resolve));
+  const endpoint = `http://127.0.0.1:${server.address().port}/v1/ml/shadow-enrichment`;
+  const response = await fetch(`${endpoint}?limit=20`, { headers: { authorization: 'Bearer analyst' } });
+  assert.deepEqual(await response.json(), { ...report, limit: 20 });
+  assert.equal((await fetch(`${endpoint}?limit=0`, { headers: { authorization: 'Bearer analyst' } })).status, 400);
+  await new Promise(resolve => server.close(resolve));
+});

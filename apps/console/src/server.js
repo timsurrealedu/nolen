@@ -7,7 +7,7 @@ const cookie = request => Object.fromEntries((request.headers.cookie ?? '').spli
 const equal = (left, right) => { const a = Buffer.from(left ?? ''), b = Buffer.from(right ?? ''); return a.length === b.length && timingSafeEqual(a, b); };
 const body = request => new Promise((resolve, reject) => { let value = ''; request.on('data', chunk => { value += chunk; if (value.length > 100_000) request.destroy(); }); request.on('end', () => resolve(value)); request.on('error', reject); });
 
-export function createConsoleServer({ users = {}, incidentRepository, eventRepository, agents = [], rules = [], secure = true, sessionTtlMs = 8 * 60 * 60_000, now = Date.now, assetDirectory = new URL('../public/', import.meta.url) } = {}) {
+export function createConsoleServer({ users = {}, incidentRepository, eventRepository, shadowEnrichmentRepository, agents = [], rules = [], secure = true, sessionTtlMs = 8 * 60 * 60_000, now = Date.now, assetDirectory = new URL('../public/', import.meta.url) } = {}) {
   const sessions = new Map(), streams = new Map();
   const session = request => {
     const id = cookie(request).nolen_session, value = sessions.get(id);
@@ -57,6 +57,11 @@ export function createConsoleServer({ users = {}, incidentRepository, eventRepos
       }
       if (request.method === 'GET' && url.pathname === '/api/session') { const current = authorized(request, response); return current && json(response, 200, { username: current.username, role: current.role, csrf: current.csrf }); }
       if (request.method === 'GET' && url.pathname === '/api/incidents') { const current = authorized(request, response); return current && json(response, 200, { incidents: await incidentRepository.list({ limit: 50 }) }); }
+      if (request.method === 'GET' && url.pathname === '/api/ml/shadow-enrichment') {
+        const current = authorized(request, response); if (!current) return;
+        try { return json(response, 200, await shadowEnrichmentRepository.read({ limit: 50 })); }
+        catch { return json(response, 503, { error: 'shadow_enrichment_unavailable' }); }
+      }
       if (request.method === 'GET' && url.pathname === '/api/events') { const current = authorized(request, response); return current && json(response, 200, { events: await eventRepository.search(Object.fromEntries(url.searchParams)) }); }
       if (request.method === 'GET' && url.pathname === '/api/agents') { const current = authorized(request, response); return current && json(response, 200, { agents }); }
       if (request.method === 'GET' && url.pathname === '/api/rules') { const current = authorized(request, response); return current && json(response, 200, { rules }); }
@@ -77,7 +82,7 @@ export function createConsoleServer({ users = {}, incidentRepository, eventRepos
         const active = streams.get(current.id) ?? new Set(); active.add(response); streams.set(current.id, active);
         request.on('close', () => { active.delete(response); if (!active.size) streams.delete(current.id); }); return;
       }
-      if (request.method === 'GET' && (url.pathname === '/' || url.pathname.startsWith('/incidents/') || url.pathname === '/events' || url.pathname === '/endpoints')) {
+      if (request.method === 'GET' && (url.pathname === '/' || url.pathname.startsWith('/incidents/') || url.pathname === '/events' || url.pathname === '/endpoints' || url.pathname === '/ml-advisory')) {
         if (!session(request)) return send(response, 303, '', { location: '/login' });
         const nonce = randomBytes(18).toString('base64'); return send(response, 200, await shell(nonce), { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': securityHeaders(nonce)['content-security-policy'] });
       }

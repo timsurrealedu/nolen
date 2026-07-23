@@ -5,26 +5,27 @@
 ```bash
 NOLEN_LOCAL_DEV=true npm run secrets:init
 docker compose up -d
+npm run migrate:local:messaging
 ```
 
 Compose initializes schemas and least-privilege identities on a new data directory. Host processes must use each service's `NATS_USER`, `NATS_PASSWORD_FILE`, `POSTGRES_USER`, `POSTGRES_PASSWORD_FILE`, `CLICKHOUSE_USER`, and `CLICKHOUSE_PASSWORD_FILE`. Production mode has no credential fallbacks. Use the NATS `admin` identity only for `npm run migrate:messaging`.
 
-Run these three long-lived services in separate terminals:
+Run these long-lived services in separate terminals. The `local` commands read generated password files and retain the least-privilege Compose identities:
 
 ```bash
-npm run start:ingestion
-npm run start:event-store
-npm run start:detection
-npm run start:incident-store
-npm run start:api
+npm run start:local:ingestion
+npm run start:local:event-store
+npm run start:local:detection
+npm run start:local:incident-store
+npm run start:local:api
 npm run build:console
-npm run start:console
+npm run start:local:console
 ```
 
 ## Health and telemetry audit
 
 ```bash
-npm run health:services
+npm run health:local
 npm run audit:event-store
 ```
 
@@ -37,7 +38,7 @@ The same read-only report is available to an authenticated analyst through `GET 
 After all services above are running:
 
 ```bash
-npm run demo:live
+npm run demo:local
 ```
 
 It sends one harmless synthetic failed-SSH event to local ingestion, waits for NATS/event-store persistence, then verifies that the analyst API can retrieve the same event. It uses the local development tokens and does not connect to remote hosts.

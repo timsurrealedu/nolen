@@ -102,3 +102,7 @@ Errors:
 - `GET /v1/stream/incidents` (server-sent events)
 
 New incidents are also delivered through the authenticated SSE endpoint after JetStream delivery. The audit endpoint is read-only and advisory; it does not create, suppress, or change security incidents.
+
+## ML shadow enrichment
+
+`GET /v1/ml/shadow-enrichment?limit=50` returns a read-only ML advisory report. It returns `503` until `npm run ml:pipeline` has generated the local report. It cannot create, suppress, close, reprioritize, or modify deterministic incidents.

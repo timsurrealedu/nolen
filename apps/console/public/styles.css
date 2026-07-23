@@ -82,6 +82,7 @@ dd { margin: .2rem 0 0; font-weight: 650; }
 .timeline li { display: flex; gap: .8rem; padding: .6rem 0; }
 .timeline li span { display: grid; place-items: center; width: 1.55rem; height: 1.55rem; border-radius: 50%; background: var(--surface); font-size: .75rem; }
 .notice, .form-error { padding: .8rem 1rem; background: oklch(0.94 0.035 25); color: oklch(0.38 0.16 25); }
+.advisory-note { margin-bottom: 1.5rem; padding: .85rem 1rem; border-left: 4px solid var(--accent); background: oklch(0.95 0.02 245); color: var(--accent); font-weight: 650; }
 .boot { margin: auto; color: var(--muted); }
 .login { display: grid; place-items: center; background: var(--surface); padding: 1rem; }
 .login-panel { width: min(25rem, 100%); background: white; padding: 2rem; border-radius: 14px; box-shadow: 0 4px 8px oklch(0.15 0 0 / .12); display: grid; gap: 1rem; }
