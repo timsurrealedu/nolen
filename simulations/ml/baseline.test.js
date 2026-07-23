@@ -15,6 +15,10 @@ test('trains an ML baseline only on the training partition and evaluates both ba
   assert.equal(report.logistic_regression_baseline.evaluated_windows, report.split.test_windows);
   assert.equal(report.deterministic_rules_baseline.evaluated_windows, report.split.test_windows);
   assert.ok(report.logistic_regression_baseline.accuracy >= 0 && report.logistic_regression_baseline.accuracy <= 1);
+  assert.equal(report.class_distribution.training.malicious + report.class_distribution.training.normal, report.split.training_windows);
+  assert.equal(report.class_distribution.test.malicious + report.class_distribution.test.normal, report.split.test_windows);
+  assert.ok(report.logistic_regression_baseline.average_precision >= 0 && report.logistic_regression_baseline.average_precision <= 1);
+  assert.equal(report.logistic_regression_baseline.precision_recall_by_threshold.length, 9);
 });
 
 test('keeps the deterministic brute-force threshold separate from ML probabilities', () => {

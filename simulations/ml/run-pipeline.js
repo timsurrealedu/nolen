@@ -4,6 +4,7 @@ import { writeDataset } from '../dataset/generate.js';
 import { buildFeatureTableFromFiles } from './build-feature-table.js';
 import { evaluateFromFile } from './evaluate-baseline.js';
 import { validateDataFromFiles } from './validate-data.js';
+import { createShadowEnrichmentReport } from './shadow-enrichment.js';
 
 export class MlInputBlockedError extends Error {
   constructor(report) {
@@ -23,11 +24,13 @@ export async function runMlPipeline() {
   const quality = assertMlBuildAllowed(await validateDataFromFiles());
   const featureTable = await buildFeatureTableFromFiles();
   const evaluation = await evaluateFromFile();
+  const shadowEnrichment = await createShadowEnrichmentReport();
   return {
     dataset,
     data_quality: { status: quality.summary.status, findings: quality.findings },
     feature_table: featureTable,
-    evaluation
+    evaluation,
+    shadow_enrichment: { advisory_only: shadowEnrichment.advisory_only, enrichment_count: shadowEnrichment.enrichment_count }
   };
 }
 

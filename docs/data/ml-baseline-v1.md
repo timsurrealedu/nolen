@@ -22,9 +22,19 @@ The initial model uses event volume, failed and successful login counts, invalid
 
 ## Evaluation
 
-`simulations/ml/out/baseline-report.json` records the confusion matrix, precision, recall, F1, accuracy, and feature weights for both baselines on the exact same held-out rows. `simulations/ml/out/logistic-regression-model.json` contains the trained coefficients and scaling statistics.
+`simulations/ml/out/baseline-report.json` records the class distribution, confusion matrix, precision, recall, F1, accuracy, average precision, threshold-by-threshold precision/recall, and feature weights for both baselines on the exact same held-out rows. `simulations/ml/out/logistic-regression-model.json` contains the trained coefficients and scaling statistics.
 
 These files are ignored by Git because they are generated artifacts. Record the dataset metadata and report together when presenting an experiment.
+
+## Advisory shadow enrichment
+
+```bash
+npm run evaluate:shadow-enrichment
+```
+
+`simulations/ml/out/shadow-enrichment-report.json` is an offline, generated explanation artifact. For each canonical five-minute entity window it records a probability, low/medium/high risk band, three largest feature contributions, model version, and data-quality status. It contains no incident identifier or mutable incident field.
+
+It is deliberately advisory-only: it cannot create, suppress, close, reprioritize, or otherwise modify deterministic incidents. Any future API or console presentation must preserve that boundary and require a separate team integration review.
 
 ## Challenge evaluation
 

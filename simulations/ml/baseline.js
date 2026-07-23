@@ -76,6 +76,26 @@ export function evaluate(rows, predictor) {
   };
 }
 
+function evaluateProbabilities(rows, predictor) {
+  const thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
+  const points = thresholds.map(threshold => ({
+    threshold,
+    ...evaluate(rows, row => predictor(row) >= threshold)
+  }));
+  const ranked = rows.map(row => ({ actual: target(row), probability: predictor(row) })).sort((left, right) => right.probability - left.probability);
+  const positives = ranked.filter(row => row.actual).length;
+  let truePositive = 0, falsePositive = 0, previousRecall = 0, averagePrecision = 0;
+  for (const row of ranked) {
+    if (row.actual) truePositive += 1;
+    else falsePositive += 1;
+    const recall = positives === 0 ? 0 : truePositive / positives;
+    const precision = truePositive / (truePositive + falsePositive);
+    averagePrecision += (recall - previousRecall) * precision;
+    previousRecall = recall;
+  }
+  return { average_precision: averagePrecision, precision_recall_by_threshold: points };
+}
+
 export function evaluateBaselines(rows) {
   const trainingRows = rows.filter(row => row.split === 'train');
   const testRows = rows.filter(row => row.split === 'test');
@@ -85,8 +105,15 @@ export function evaluateBaselines(rows) {
     report: {
       split: { training_windows: trainingRows.length, test_windows: testRows.length },
       model_feature_weights: Object.fromEntries(FEATURE_COLUMNS.map((feature, index) => [feature, model.weights[index]])),
+      class_distribution: {
+        training: { malicious: trainingRows.filter(target).length, normal: trainingRows.filter(row => !target(row)).length },
+        test: { malicious: testRows.filter(target).length, normal: testRows.filter(row => !target(row)).length }
+      },
       deterministic_rules_baseline: evaluate(testRows, ruleBaselinePrediction),
-      logistic_regression_baseline: evaluate(testRows, row => predictProbability(model, row) >= model.threshold)
+      logistic_regression_baseline: {
+        ...evaluate(testRows, row => predictProbability(model, row) >= model.threshold),
+        ...evaluateProbabilities(testRows, row => predictProbability(model, row))
+      }
     }
   };
 }

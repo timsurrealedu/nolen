@@ -21,6 +21,7 @@
     "build:feature-table": "node simulations/ml/build-feature-table.js",
     "evaluate:baseline": "node simulations/ml/evaluate-baseline.js",
     "evaluate:challenge": "node simulations/ml/evaluate-challenge.js",
+    "evaluate:shadow-enrichment": "node simulations/ml/shadow-enrichment.js",
     "validate:ml-data": "node simulations/ml/validate-data.js",
     "ml:pipeline": "node simulations/ml/run-pipeline.js",
     "audit:event-store": "node services/event-store/src/audit.js",
