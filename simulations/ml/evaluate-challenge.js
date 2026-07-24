@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generateDataset } from '../dataset/generate.js';
-import { evaluate, predictProbability, ruleBaselinePrediction, trainLogisticRegression } from './baseline.js';
+import { evaluate, predictProbability, ruleBaselinePrediction, selectOperatingThreshold, trainLogisticRegression } from './baseline.js';
 import { generateChallengeDataset } from './challenge-dataset.js';
 import { buildFeatureTable } from './feature-table.js';
 import { correlate, detect } from '../../services/detection-engine/src/engine.js';
@@ -12,7 +12,8 @@ export async function evaluateChallenge({ reportPath = new URL('./out/challenge-
   const training = buildFeatureTable(trainingDataset.events, trainingDataset.labels).rows.filter(row => row.split === 'train');
   const challengeDataset = generateChallengeDataset();
   const challenge = buildFeatureTable(challengeDataset.events, challengeDataset.labels, { timeCutoff: '1900-01-01' }).rows;
-  const model = trainLogisticRegression(training);
+  const trainedModel = trainLogisticRegression(training);
+  const model = { ...trainedModel, threshold: selectOperatingThreshold(training, row => predictProbability(trainedModel, row)).threshold };
   const deterministicScenarioOutcomes = challengeDataset.scenarios.map(scenario => {
     const detections = detect(scenario.events);
     const ruleIds = [...new Set(detections.map(detection => detection.ruleId))].sort();
@@ -23,6 +24,7 @@ export async function evaluateChallenge({ reportPath = new URL('./out/challenge-
     purpose: 'Out-of-distribution challenge only; do not use these rows for training.',
     training_windows: training.length,
     challenge_windows: challenge.length,
+    operating_threshold: model.threshold,
     deterministic_scenario_outcomes: deterministicScenarioOutcomes,
     deterministic_rules_baseline: evaluate(challenge, ruleBaselinePrediction),
     logistic_regression_baseline: evaluate(challenge, row => predictProbability(model, row) >= model.threshold)

@@ -22,6 +22,8 @@ The initial model uses event volume, failed and successful login counts, invalid
 
 ## Evaluation
 
+The operating threshold is selected from the training partition only: among fixed candidates, Nolen chooses the highest-F1 threshold meeting 0.90 precision (or highest F1 if none qualifies). Standard holdout and challenge reports are evaluation-only; they never select the deployed advisory threshold. Each result also reports false alerts per observed host day, rather than relying on accuracy alone.
+
 `simulations/ml/out/baseline-report.json` records the class distribution, confusion matrix, precision, recall, F1, accuracy, average precision, threshold-by-threshold precision/recall, and feature weights for both baselines on the exact same held-out rows. `simulations/ml/out/logistic-regression-model.json` contains the trained coefficients and scaling statistics.
 
 These files are ignored by Git because they are generated artifacts. Record the dataset metadata and report together when presenting an experiment.
@@ -42,7 +44,7 @@ It is deliberately advisory-only: it cannot create, suppress, close, reprioritiz
 npm run evaluate:challenge
 ```
 
-This evaluation trains only on the standard dataset's training partition, then tests seven entirely separate challenge scenarios: benign retries near the threshold; low-volume and slow brute force; low-and-slow compromise; success after threshold without privilege escalation; success from a changed source; and a complete compromise variation. Each scenario declares its expected deterministic rule IDs and incident count. These rows are held-out evaluation data and must never be added to training. Results belong in `simulations/ml/out/challenge-report.json` and must be reported separately from the standard holdout score.
+This evaluation trains only on the standard dataset's training partition, then tests seven entirely separate challenge scenarios: benign retries near the threshold; low-volume and slow brute force; low-and-slow compromise; success after threshold without privilege escalation; success from a changed source; and a complete compromise variation. Each scenario declares its expected deterministic rule IDs and incident count. These rows are held-out evaluation data and must never be added to training. Results belong in `simulations/ml/out/challenge-report.json`, record the training-selected operating threshold, and must be reported separately from the standard holdout score.
 
 ## Current limit
 

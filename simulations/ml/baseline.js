@@ -56,12 +56,15 @@ export function ruleBaselinePrediction(row) {
 
 export function evaluate(rows, predictor) {
   let truePositive = 0, trueNegative = 0, falsePositive = 0, falseNegative = 0;
+  const hostDays = new Set(), falseAlertHostDays = new Set();
   for (const row of rows) {
+    const hostDay = `${row.host_id ?? 'unknown'}|${String(row.window_start ?? 'unknown').slice(0, 10)}`;
+    hostDays.add(hostDay);
     const actual = target(row);
     const predicted = predictor(row) ? 1 : 0;
     if (actual && predicted) truePositive += 1;
     else if (!actual && !predicted) trueNegative += 1;
-    else if (!actual) falsePositive += 1;
+    else if (!actual) { falsePositive += 1; falseAlertHostDays.add(hostDay); }
     else falseNegative += 1;
   }
   const precision = truePositive + falsePositive === 0 ? 0 : truePositive / (truePositive + falsePositive);
@@ -72,7 +75,10 @@ export function evaluate(rows, predictor) {
     precision,
     recall,
     f1: precision + recall === 0 ? 0 : 2 * precision * recall / (precision + recall),
-    accuracy: rows.length === 0 ? 0 : (truePositive + trueNegative) / rows.length
+    accuracy: rows.length === 0 ? 0 : (truePositive + trueNegative) / rows.length,
+    observed_host_days: hostDays.size,
+    false_alert_host_days: falseAlertHostDays.size,
+    false_alerts_per_host_day: hostDays.size === 0 ? 0 : falsePositive / hostDays.size
   };
 }
 
@@ -96,10 +102,19 @@ function evaluateProbabilities(rows, predictor) {
   return { average_precision: averagePrecision, precision_recall_by_threshold: points };
 }
 
+export function selectOperatingThreshold(rows, predictor, { minimumPrecision = 0.9 } = {}) {
+  const candidates = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].map(threshold => ({ threshold, ...evaluate(rows, row => predictor(row) >= threshold) }));
+  const eligible = candidates.filter(result => result.precision >= minimumPrecision && result.confusion_matrix.true_positive > 0);
+  const selected = (eligible.length ? eligible : candidates).sort((left, right) => right.f1 - left.f1 || right.threshold - left.threshold)[0];
+  return { criterion: { minimum_precision: minimumPrecision, fallback: eligible.length ? 'none' : 'highest_f1' }, evaluated_windows: rows.length, threshold: selected.threshold, metrics: selected };
+}
+
 export function evaluateBaselines(rows) {
   const trainingRows = rows.filter(row => row.split === 'train');
   const testRows = rows.filter(row => row.split === 'test');
-  const model = trainLogisticRegression(trainingRows);
+  const trainedModel = trainLogisticRegression(trainingRows);
+  const thresholdSelection = selectOperatingThreshold(trainingRows, row => predictProbability(trainedModel, row));
+  const model = { ...trainedModel, threshold: thresholdSelection.threshold };
   return {
     model,
     report: {
@@ -109,6 +124,7 @@ export function evaluateBaselines(rows) {
         training: { malicious: trainingRows.filter(target).length, normal: trainingRows.filter(row => !target(row)).length },
         test: { malicious: testRows.filter(target).length, normal: testRows.filter(row => !target(row)).length }
       },
+      threshold_selection: { split: 'train', ...thresholdSelection },
       deterministic_rules_baseline: evaluate(testRows, ruleBaselinePrediction),
       logistic_regression_baseline: {
         ...evaluate(testRows, row => predictProbability(model, row) >= model.threshold),

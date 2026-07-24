@@ -22,5 +22,6 @@ test('keeps challenge scenarios separate from training data and labels all chall
   const report = await evaluateChallenge();
   assert.equal(report.purpose.startsWith('Out-of-distribution'), true);
   assert.ok(report.challenge_windows > 0);
+  assert.ok(report.operating_threshold >= 0.1 && report.operating_threshold <= 0.9);
   assert.deepEqual(report.deterministic_scenario_outcomes.filter(outcome => !outcome.passed), []);
 });
