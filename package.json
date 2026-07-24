@@ -25,6 +25,8 @@
     "start:incident-store": "node services/event-store/src/incident-consumer.js",
     "start:detection": "node services/detection-engine/src/consumer.js",
     "generate:dataset": "node simulations/dataset/generate.js",
+    "import:loghub-openssh": "node simulations/external/import-loghub-openssh.js",
+    "replay:loghub-openssh": "node simulations/external/replay-loghub-openssh.js",
     "build:feature-table": "node simulations/ml/build-feature-table.js",
     "evaluate:baseline": "node simulations/ml/evaluate-baseline.js",
     "evaluate:challenge": "node simulations/ml/evaluate-challenge.js",

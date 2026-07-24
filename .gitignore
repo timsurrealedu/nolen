@@ -2,6 +2,9 @@ graphify-out/
 node_modules/
 simulations/dataset/out/
 simulations/ml/out/
+data/raw/
+data/processed/
+data/UNSW_NB15_*.csv
 secrets/*
 !secrets/README.md
 apps/console/dist/
