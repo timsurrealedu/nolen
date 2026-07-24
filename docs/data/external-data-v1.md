@@ -21,6 +21,14 @@ npm.cmd run replay:loghub-openssh
 
 The resulting `replay-report.json` contains aggregate rule and incident counts plus bounded evidence-ID samples. It is a parser/rule-coverage check, not an accuracy claim.
 
+To check whether the synthetic-trained advisory model can consume the same feature shape, without claiming external accuracy:
+
+```powershell
+npm.cmd run score:loghub-openssh
+```
+
+`ml-shadow-report.json` reports only score bands and score range. It contains no labels, accuracy, recall, precision, or incident mutations.
+
 ## UNSW-NB15
 
 The downloaded UNSW CSV files are network-flow data. Their labels and columns do not map safely to Nolen's SSH NEF features, so they are excluded from the current model. Keep them for a future, separately designed network-flow pipeline; do not merge them into SSH-window training data.

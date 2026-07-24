@@ -55,6 +55,24 @@ function profile(events) {
   };
 }
 
+export function buildUnlabelledOpenSshFeatureRows(events) {
+  const rows = new Map();
+  for (const event of events) {
+    const entity = entityForEvent(event);
+    if (!entity) continue;
+    const windowStart = new Date(Math.floor(Date.parse(event.timestamp) / 300000) * 300000).toISOString();
+    const key = `${windowStart}|${entity.entity_type}|${entity.host_id}|${entity.source_ip}|${entity.user_name ?? '<absent>'}`;
+    const row = rows.get(key) ?? { window_start: windowStart, ...entity, event_count: 0, failed_login_count: 0, invalid_user_count: 0, successful_login_count: 0, elevated_shell_count: 0, sensitive_file_access_count: 0, cron_modify_count: 0, users: new Set() };
+    row.event_count += 1;
+    if (event.user?.name) row.users.add(event.user.name);
+    if (event.event.action === 'login' && event.event.result === 'failure') row.failed_login_count += 1;
+    if (event.event.action === 'invalid_user') row.invalid_user_count += 1;
+    if (event.event.action === 'login' && event.event.result === 'success') row.successful_login_count += 1;
+    rows.set(key, row);
+  }
+  return [...rows.values()].map(({ users, ...row }) => ({ ...row, distinct_user_count: users.size })).sort((left, right) => left.window_start.localeCompare(right.window_start) || left.source_ip.localeCompare(right.source_ip));
+}
+
 export async function importLoghubOpenSsh({ inputPath = new URL('../../data/raw/loghub-openssh/OpenSSH_2k.log', import.meta.url), outputPath = new URL('../../data/processed/loghub-openssh/events.jsonl', import.meta.url), reportPath = new URL('../../data/processed/loghub-openssh/import-report.json', import.meta.url), year } = {}) {
   if (!Number.isInteger(year) || year < 1970 || year > 2100) throw new Error('Provide the source log year with LOGHUB_START_YEAR (for example, 2017).');
   const lines = (await readFile(inputPath, 'utf8')).split(/\r?\n/).filter(Boolean);

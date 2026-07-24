@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseOpenSshLine } from './loghub-openssh.js';
+import { buildUnlabelledOpenSshFeatureRows, parseOpenSshLine } from './loghub-openssh.js';
 import { validateEvent } from '../../packages/nef/src/validate.js';
 
 test('maps terminal OpenSSH outcomes to valid NEF without double-counting precursor logs', () => {
@@ -10,4 +10,12 @@ test('maps terminal OpenSSH outcomes to valid NEF without double-counting precur
   assert.equal(invalid.event.action, 'invalid_user');
   assert.equal(success.event.result, 'success');
   assert.equal(parseOpenSshLine('Dec 10 06:55:46 LabSZ sshd[24200]: Invalid user webmaster from 173.234.31.186', { year: 2017, lineNumber: 2 }), null);
+});
+
+test('builds compatible unlabelled SSH feature windows without assigning labels', () => {
+  const events = [0, 10].map(index => parseOpenSshLine(`Dec 10 06:55:${String(index).padStart(2, '0')} LabSZ sshd[24200]: Failed password for root from 203.0.113.7 port 22 ssh2`, { year: 2017, lineNumber: index + 1 }));
+  const [row] = buildUnlabelledOpenSshFeatureRows(events);
+  assert.equal(row.failed_login_count, 2);
+  assert.equal(row.distinct_user_count, 1);
+  assert.equal('label' in row, false);
 });
